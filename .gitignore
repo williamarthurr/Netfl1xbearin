@@ -1,0 +1,17 @@
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Log & temp
+*.log
+*.tmp
+
+# Node (kalau nanti pakai tooling)
+node_modules/
+npm-debug.log*
