@@ -28,7 +28,8 @@ function createToken() {
 }
 
 function reviewUrl(orderId, token) {
-  const basePath = window.location.pathname.replace(/\/admin\.html$/, "/");
+  // Cloudflare Pages dapat menyajikan admin.html sebagai /admin atau /admin.html.
+  const basePath = window.location.pathname.replace(/\/admin(?:\.html)?$/, "/");
   return `${window.location.origin}${basePath}?review=${encodeURIComponent(orderId)}&token=${encodeURIComponent(token)}#ulasan`;
 }
 
