@@ -24,6 +24,7 @@
         <a href="#katalog">Katalog</a>
         <a href="#keunggulan">Keunggulan</a>
         <a href="#testimoni">Testimoni</a>
+        <a href="#ulasan">Rating</a>
         <a href="#cara-order">Cara Order</a>
         <a href="#faq">FAQ</a>
         <a href="#contact">Contact</a>
@@ -102,6 +103,59 @@
         <div class="skeleton-card"></div>
         <div class="skeleton-card"></div>
       </div>
+    </div>
+  </section>
+
+  <!-- Rating pelanggan terverifikasi -->
+  <section class="section reviews" id="ulasan">
+    <div class="container">
+      <div class="section-head">
+        <p class="section-eyebrow">RATING PELANGGAN</p>
+        <h2 class="section-title">Kepuasan Customer</h2>
+        <p class="section-desc">Rating dan ulasan dari customer yang udah percaya beli disini, trusted :p</p>
+      </div>
+
+      <div class="reviews-summary" aria-live="polite">
+        <div class="rating-overview">
+          <strong id="ratingAverage">—</strong>
+          <div class="rating-stars rating-stars-static" id="ratingAverageStars" aria-label="Belum ada rating">★★★★★</div>
+          <span id="ratingCount">Memuat ulasan…</span>
+        </div>
+        <div class="rating-bars" id="ratingBars" aria-label="Distribusi rating"></div>
+      </div>
+
+      <div class="review-list" id="reviewList" aria-live="polite">
+        <p class="review-empty">Ulasan pelanggan sedang dimuat…</p>
+      </div>
+
+      <form class="review-form" id="reviewForm" hidden>
+        <div class="review-form-head">
+          <div>
+            <p class="section-eyebrow">ULASAN TERVERIFIKASI</p>
+            <h3>Bagaimana pengalamanmu?</h3>
+          </div>
+          <span class="verified-badge">✓ Pembelian terverifikasi</span>
+        </div>
+        <p class="review-form-desc">Rating kamu akan ditinjau sebelum tampil di halaman ini.</p>
+        <fieldset class="star-picker">
+          <legend>Berikan rating</legend>
+          <div class="star-picker-inputs">
+            <input type="radio" id="star5" name="rating" value="5" required><label for="star5" title="5 bintang">★</label>
+            <input type="radio" id="star4" name="rating" value="4"><label for="star4" title="4 bintang">★</label>
+            <input type="radio" id="star3" name="rating" value="3"><label for="star3" title="3 bintang">★</label>
+            <input type="radio" id="star2" name="rating" value="2"><label for="star2" title="2 bintang">★</label>
+            <input type="radio" id="star1" name="rating" value="1"><label for="star1" title="1 bintang">★</label>
+          </div>
+        </fieldset>
+        <label class="review-field">Nama panggilan (opsional)
+          <input id="reviewName" name="name" type="text" maxlength="40" placeholder="Contoh: Narin" autocomplete="name">
+        </label>
+        <label class="review-field">Ceritakan pengalamanmu
+          <textarea id="reviewText" name="review" maxlength="500" minlength="10" required placeholder="Pelayanan, proses, atau kualitas akun yang kamu rasakan…"></textarea>
+        </label>
+        <button class="btn btn-primary" id="reviewSubmit" type="submit">Kirim Ulasan</button>
+        <p class="review-status" id="reviewStatus" role="status"></p>
+      </form>
     </div>
   </section>
 
@@ -297,6 +351,7 @@
     </div>
   </footer>
 
-  <script src="js/main.js"></script>
+  <!-- Firebase SDK modular: konfigurasi ada di js/firebase-config.js -->
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>

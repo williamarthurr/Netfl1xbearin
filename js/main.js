@@ -1,5 +1,28 @@
 // Konfigurasi nomor WhatsApp — ganti dengan nomor reseller (format internasional tanpa +)
 const WA_NUMBER = "6287782164717";
+let db = null;
+let firestoreApi = null;
+const reviewParams = new URLSearchParams(window.location.search);
+const reviewOrderId = reviewParams.get("review");
+const reviewToken = reviewParams.get("token");
+
+async function initFirebase() {
+  try {
+    // Firebase dimuat terpisah agar kegagalan koneksi CDN tidak menghentikan katalog.
+    const [appModule, firestoreModule, configModule] = await Promise.all([
+      import("https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js"),
+      import("https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js"),
+      import("./firebase-config.js")
+    ]);
+    const { firebaseConfig } = configModule;
+    if (!firebaseConfig.projectId || firebaseConfig.projectId.startsWith("PASTE_")) return;
+    firestoreApi = firestoreModule;
+    db = firestoreApi.getFirestore(appModule.initializeApp(firebaseConfig));
+    await loadReviews();
+  } catch (error) {
+    console.error("Firebase gagal dimuat:", error);
+  }
+}
 
 // Katalog paket
 const PACKAGES = [
@@ -163,7 +186,102 @@ function initLazyImages() {
   });
 }
 
+function escapeHtml(value) {
+  const element = document.createElement("div");
+  element.textContent = value || "Customer terverifikasi";
+  return element.innerHTML;
+}
+
+function formatReviewDate(timestamp) {
+  if (!timestamp?.toDate) return "Baru saja";
+  return new Intl.DateTimeFormat("id-ID", { dateStyle: "medium" }).format(timestamp.toDate());
+}
+
+function renderReviewSummary(reviews) {
+  const average = reviews.length ? reviews.reduce((total, review) => total + review.rating, 0) / reviews.length : 0;
+  document.getElementById("ratingAverage").textContent = reviews.length ? average.toFixed(1) : "—";
+  const stars = document.getElementById("ratingAverageStars");
+  stars.textContent = "★".repeat(Math.round(average)) + "☆".repeat(5 - Math.round(average));
+  stars.setAttribute("aria-label", reviews.length ? `${average.toFixed(1)} dari 5 bintang` : "Belum ada rating");
+  document.getElementById("ratingCount").textContent = reviews.length ? `${reviews.length} ulasan terverifikasi` : "Belum ada ulasan";
+  document.getElementById("ratingBars").innerHTML = [5, 4, 3, 2, 1].map((star) => {
+    const count = reviews.filter((review) => review.rating === star).length;
+    const percentage = reviews.length ? (count / reviews.length) * 100 : 0;
+    return `<div class="rating-bar-row"><span>${star} ★</span><div class="rating-bar"><i style="width:${percentage}%"></i></div><b>${count}</b></div>`;
+  }).join("");
+}
+
+function renderReviews(reviews) {
+  const list = document.getElementById("reviewList");
+  renderReviewSummary(reviews);
+  if (!reviews.length) {
+    list.innerHTML = '<p class="review-empty">Belum ada ulasan, jadilah yang pertama!</p>';
+    return;
+  }
+  list.innerHTML = reviews.map((review) => `<article class="review-card">
+    <div class="review-card-top"><div><strong>${escapeHtml(review.customerName)}</strong><span class="verified-badge">✓ Terverifikasi</span></div><time>${formatReviewDate(review.createdAt)}</time></div>
+    <div class="review-stars" aria-label="${review.rating} dari 5 bintang">${"★".repeat(review.rating)}${"☆".repeat(5 - review.rating)}</div>
+    <p>${escapeHtml(review.comment)}</p>
+  </article>`).join("");
+}
+
+async function loadReviews() {
+  if (!db) { renderReviews([]); return; }
+  try {
+    // Urutkan di browser agar tidak memerlukan composite index Firestore untuk halaman sederhana ini.
+    const reviewQuery = firestoreApi.query(firestoreApi.collection(db, "reviews"), firestoreApi.where("approved", "==", true), firestoreApi.limit(50));
+    const snapshot = await firestoreApi.getDocs(reviewQuery);
+    const reviews = snapshot.docs.map((doc) => doc.data()).sort((a, b) => {
+      const aTime = a.createdAt?.toMillis?.() || 0;
+      const bTime = b.createdAt?.toMillis?.() || 0;
+      return bTime - aTime;
+    }).slice(0, 12);
+    renderReviews(reviews);
+  } catch (error) {
+    console.error("Ulasan tidak dapat dimuat:", error);
+    document.getElementById("reviewList").innerHTML = '<p class="review-empty">Ulasan belum dapat dimuat. Coba lagi nanti.</p>';
+  }
+}
+
+function initReviewForm() {
+  const form = document.getElementById("reviewForm");
+  if (!reviewOrderId || !reviewToken) return;
+  form.hidden = false;
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const status = document.getElementById("reviewStatus");
+    const submit = document.getElementById("reviewSubmit");
+    const rating = Number(new FormData(form).get("rating"));
+    const customerName = document.getElementById("reviewName").value.trim() || "Customer terverifikasi";
+    const comment = document.getElementById("reviewText").value.trim();
+    if (!db) {
+      status.textContent = "Form belum aktif. Admin perlu menyelesaikan konfigurasi Firebase.";
+      status.className = "review-status error";
+      return;
+    }
+    submit.disabled = true;
+    status.textContent = "Mengirim ulasan…";
+    status.className = "review-status";
+    try {
+      await firestoreApi.setDoc(firestoreApi.doc(db, "reviews", reviewOrderId), { orderId: reviewOrderId, reviewToken, customerName, comment, rating, approved: false, createdAt: firestoreApi.serverTimestamp() });
+      form.reset();
+      form.querySelectorAll("input, textarea, button").forEach((field) => { field.disabled = true; });
+      status.textContent = "Terima kasih! Ulasannya udah kekirim kok, nanti muncul :p";
+      status.className = "review-status success";
+    } catch (error) {
+      console.error("Ulasan gagal dikirim:", error);
+      submit.disabled = false;
+      const isPermissionError = error?.code === "permission-denied";
+      status.textContent = isPermissionError
+        ? "gagal kirim ulasan, hubungi kakak penjualnya yaa ~."
+        : `Ulasan tidak dapat dikirim (${error?.code || "kesalahan koneksi"}). Coba lagi.`;
+      status.className = "review-status error";
+    }
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
+  initFirebase();
   renderCatalog();
   initGenericOrder();
   initFaq();
@@ -172,4 +290,6 @@ document.addEventListener("DOMContentLoaded", () => {
   initYear();
   initLightbox();
   initLazyImages();
+  initReviewForm();
+  loadReviews();
 });
