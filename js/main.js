@@ -11,9 +11,9 @@ const PACKAGES = [
   { duration: "1 Bulan", device: "2 device", price: "45", per: "/ bulan", icon: "fi-br-devices", featured: false },
 ];
 
-// Format harga jadi "4k" style
+// Format harga jadi "4.000"
 function formatPrice(price) {
-  return `${price}k`;
+  return (Number(price) * 1000).toLocaleString('id-ID');
 }
 
 function waLink(pkg) {
@@ -37,7 +37,7 @@ function renderCatalog() {
         <div class="card-icon"><i class="fi ${pkg.icon}"></i></div>
         <h3 class="card-duration">${pkg.duration}</h3>
         <p class="card-device">${pkg.device}</p>
-        <div class="card-price">${formatPrice(pkg.price)} <small>Rp ${pkg.price}.000</small></div>
+        <div class="card-price">${formatPrice(pkg.price)}</small></div>
         <p class="card-per">${pkg.per}</p>
         <a href="${waLink(pkg)}" target="_blank" rel="noopener" class="btn btn-wa">Order via WhatsApp</a>
       </article>
