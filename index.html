@@ -124,19 +124,26 @@
         <div class="rating-bars" id="ratingBars" aria-label="Distribusi rating"></div>
       </div>
 
-      <div class="review-list" id="reviewList" aria-live="polite">
-        <p class="review-empty">Ulasan pelanggan sedang dimuat…</p>
+      <div class="carousel">
+        <button class="carousel-arrow carousel-arrow-prev" id="reviewPrev" type="button" aria-label="Lihat ulasan sebelumnya" hidden>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="review-list" id="reviewList" aria-live="polite">
+          <p class="review-empty">Ulasan pelanggan sedang dimuat…</p>
+        </div>
+        <button class="carousel-arrow carousel-arrow-next" id="reviewNext" type="button" aria-label="Lihat ulasan berikutnya" hidden>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
       </div>
 
-      <form class="review-form" id="reviewForm" hidden>
+      <form class="review-form" id="reviewForm">
         <div class="review-form-head">
           <div>
-            <p class="section-eyebrow">ULASAN TERVERIFIKASI</p>
+            <p class="section-eyebrow">TULIS ULASAN</p>
             <h3>Bagaimana pengalamanmu?</h3>
           </div>
-          <span class="verified-badge">✓ Pembelian terverifikasi</span>
         </div>
-        <p class="review-form-desc">Rating kamu akan ditinjau sebelum tampil di halaman ini.</p>
+        <p class="review-form-desc">Ulasanmu akan ditinjau admin dulu sebelum tampil di halaman ini.</p>
         <fieldset class="star-picker">
           <legend>Berikan rating</legend>
           <div class="star-picker-inputs">
@@ -209,23 +216,31 @@
         <h2 class="section-title">Kata mereka yang sudah percaya order disini</h2>
         <p class="section-desc">testimoni 100% dari pelanggan yang sudah order disini :p </p>
       </div>
-      <div class="testimoni-grid">
-        <figure class="testimoni-card" data-src="testimoni/testi1.jpeg">
-          <div class="skeleton-media"></div>
-          <img src="testimoni/testi1.jpeg" alt="Testimoni pelanggan 1" loading="lazy" decoding="async" />
-        </figure>
-        <figure class="testimoni-card" data-src="testimoni/testi2.jpeg">
-          <div class="skeleton-media"></div>
-          <img src="testimoni/testi2.jpeg" alt="Testimoni pelanggan 2" loading="lazy" decoding="async" />
-        </figure>
-        <figure class="testimoni-card" data-src="testimoni/testi3.jpeg">
-          <div class="skeleton-media"></div>
-          <img src="testimoni/testi3.jpeg" alt="Testimoni pelanggan 3" loading="lazy" decoding="async" />
-        </figure>
-        <figure class="testimoni-card" data-src="testimoni/testi4.jpeg">
-          <div class="skeleton-media"></div>
-          <img src="testimoni/testi4.jpeg" alt="Testimoni pelanggan 4" loading="lazy" decoding="async" />
-        </figure>
+      <div class="carousel">
+        <button class="carousel-arrow carousel-arrow-prev" id="testimoniPrev" type="button" aria-label="Testimoni sebelumnya" hidden>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="testimoni-grid" id="testimoniList">
+          <figure class="testimoni-card" data-src="testimoni/testi1.jpeg">
+            <div class="skeleton-media"></div>
+            <img src="testimoni/testi1.jpeg" alt="Testimoni pelanggan 1" loading="lazy" decoding="async" />
+          </figure>
+          <figure class="testimoni-card" data-src="testimoni/testi2.jpeg">
+            <div class="skeleton-media"></div>
+            <img src="testimoni/testi2.jpeg" alt="Testimoni pelanggan 2" loading="lazy" decoding="async" />
+          </figure>
+          <figure class="testimoni-card" data-src="testimoni/testi3.jpeg">
+            <div class="skeleton-media"></div>
+            <img src="testimoni/testi3.jpeg" alt="Testimoni pelanggan 3" loading="lazy" decoding="async" />
+          </figure>
+          <figure class="testimoni-card" data-src="testimoni/testi4.jpeg">
+            <div class="skeleton-media"></div>
+            <img src="testimoni/testi4.jpeg" alt="Testimoni pelanggan 4" loading="lazy" decoding="async" />
+          </figure>
+        </div>
+        <button class="carousel-arrow carousel-arrow-next" id="testimoniNext" type="button" aria-label="Testimoni berikutnya" hidden>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
       </div>
     </div>
   </section>

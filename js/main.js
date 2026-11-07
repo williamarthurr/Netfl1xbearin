@@ -2,9 +2,6 @@
 const WA_NUMBER = "6287782164717";
 let db = null;
 let firestoreApi = null;
-const reviewParams = new URLSearchParams(window.location.search);
-const reviewOrderId = reviewParams.get("review");
-const reviewToken = reviewParams.get("token");
 
 async function initFirebase() {
   try {
@@ -19,6 +16,7 @@ async function initFirebase() {
     firestoreApi = firestoreModule;
     db = firestoreApi.getFirestore(appModule.initializeApp(firebaseConfig));
     await loadReviews();
+    loadTestimonialPhotos();
   } catch (error) {
     console.error("Firebase gagal dimuat:", error);
   }
@@ -134,19 +132,20 @@ function initYear() {
   document.getElementById("year").textContent = new Date().getFullYear();
 }
 
-// Lightbox testimoni
+// Lightbox testimoni — delegasi di kontainer agar kartu dinamis (hasil upload admin) ikut berfungsi
 function initLightbox() {
   const lightbox = document.getElementById("lightbox");
   const img = document.getElementById("lightboxImg");
   const close = document.getElementById("lightboxClose");
+  const grid = document.getElementById("testimoniList");
 
-  document.querySelectorAll(".testimoni-card").forEach((card) => {
-    card.addEventListener("click", () => {
-      img.src = card.dataset.src;
-      lightbox.classList.add("open");
-      lightbox.setAttribute("aria-hidden", "false");
-      document.body.style.overflow = "hidden";
-    });
+  grid.addEventListener("click", (e) => {
+    const card = e.target.closest(".testimoni-card");
+    if (!card) return;
+    img.src = card.dataset.src;
+    lightbox.classList.add("open");
+    lightbox.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
   });
 
   const closeLightbox = () => {
@@ -166,29 +165,44 @@ function initLightbox() {
 }
 
 // Lazy-load + hilangkan skeleton saat gambar testimoni termuat
+function watchLazyImage(img) {
+  const onLoad = () => img.closest(".testimoni-card")?.classList.add("loaded");
+  img.addEventListener("load", onLoad, { once: true });
+  img.addEventListener("error", () => {
+    // kalau gagal dimuat, tetap sembunyikan skeleton agar layout tidak kosong
+    onLoad();
+  }, { once: true });
+  // jika sudah termuat (dari cache), langsung tandai
+  if (img.complete && img.naturalWidth > 0) onLoad();
+}
+
 function initLazyImages() {
-  const images = document.querySelectorAll(".testimoni-card img");
+  document.querySelectorAll(".testimoni-card img").forEach(watchLazyImage);
+}
 
-  const onLoad = (img) => {
-    const card = img.closest(".testimoni-card");
-    if (card) card.classList.add("loaded");
-  };
-
-  images.forEach((img) => {
-    img.addEventListener("load", () => onLoad(img), { once: true });
-    img.addEventListener("error", () => {
-      // kalau gagal dimuat, tetap sembunyikan skeleton agar layout tidak kosong
-      const card = img.closest(".testimoni-card");
-      if (card) card.classList.add("loaded");
-    }, { once: true });
-    // jika sudah termuat (dari cache), langsung tandai
-    if (img.complete && img.naturalWidth > 0) onLoad(img);
-  });
+// Foto testimoni hasil upload admin (data URL di Firestore) ditambahkan setelah foto statis.
+async function loadTestimonialPhotos() {
+  if (!db) return;
+  try {
+    const snapshot = await firestoreApi.getDocs(firestoreApi.collection(db, "testimonials"));
+    const photos = snapshot.docs.map((doc) => doc.data())
+      .sort((a, b) => (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0));
+    if (!photos.length) return;
+    const list = document.getElementById("testimoniList");
+    list.insertAdjacentHTML("beforeend", photos.map((photo) => `<figure class="testimoni-card" data-src="${photo.src}">
+      <div class="skeleton-media"></div>
+      <img src="${photo.src}" alt="${escapeHtml(photo.fileName || "Testimoni pelanggan")}" loading="lazy" decoding="async" />
+    </figure>`).join(""));
+    list.querySelectorAll(".testimoni-card img").forEach(watchLazyImage);
+    carouselSync.testimoni?.();
+  } catch (error) {
+    console.error("Foto testimoni tidak dapat dimuat:", error);
+  }
 }
 
 function escapeHtml(value) {
   const element = document.createElement("div");
-  element.textContent = value || "Customer terverifikasi";
+  element.textContent = value || "Customer";
   return element.innerHTML;
 }
 
@@ -216,13 +230,50 @@ function renderReviews(reviews) {
   renderReviewSummary(reviews);
   if (!reviews.length) {
     list.innerHTML = '<p class="review-empty">Belum ada ulasan, jadilah yang pertama!</p>';
+    carouselSync.review?.();
     return;
   }
   list.innerHTML = reviews.map((review) => `<article class="review-card">
-    <div class="review-card-top"><div><strong>${escapeHtml(review.customerName)}</strong><span class="verified-badge">✓ Terverifikasi</span></div><time>${formatReviewDate(review.createdAt)}</time></div>
+    <div class="review-card-top"><div><strong>${escapeHtml(review.customerName)}</strong></div><time>${formatReviewDate(review.createdAt)}</time></div>
     <div class="review-stars" aria-label="${review.rating} dari 5 bintang">${"★".repeat(review.rating)}${"☆".repeat(5 - review.rating)}</div>
     <p>${escapeHtml(review.comment)}</p>
   </article>`).join("");
+  list.scrollLeft = 0; // render ulang selalu mulai dari kartu pertama
+  // Chrome bisa re-snap scroll-snap setelah layout berikutnya; tawar ulang di frame itu.
+  requestAnimationFrame(() => { list.scrollLeft = 0; carouselSync.review?.(); });
+  carouselSync.review?.();
+}
+
+// Carousel generik (ulasan & testimoni): panah hanya tampil bila konten melebihi lebar kontainer.
+const carouselSync = {};
+
+function initCarousel(listId, prevId, nextId) {
+  const list = document.getElementById(listId);
+  const prev = document.getElementById(prevId);
+  const next = document.getElementById(nextId);
+  if (!list || !prev || !next) return;
+  const step = () => {
+    const card = list.querySelector(":scope > *");
+    const gap = parseFloat(getComputedStyle(list).columnGap) || 18;
+    return card ? card.getBoundingClientRect().width + gap : list.clientWidth * 0.8;
+  };
+  const sync = () => {
+    const hasOverflow = list.scrollWidth > list.clientWidth + 1;
+    prev.hidden = next.hidden = !hasOverflow;
+    prev.disabled = list.scrollLeft <= 2;
+    next.disabled = list.scrollLeft + list.clientWidth >= list.scrollWidth - 2;
+  };
+  prev.addEventListener("click", () => list.scrollBy({ left: -step(), behavior: "smooth" }));
+  next.addEventListener("click", () => list.scrollBy({ left: step(), behavior: "smooth" }));
+  list.addEventListener("scroll", sync, { passive: true });
+  window.addEventListener("resize", sync);
+  sync();
+  return sync;
+}
+
+function initCarousels() {
+  carouselSync.review = initCarousel("reviewList", "reviewPrev", "reviewNext");
+  carouselSync.testimoni = initCarousel("testimoniList", "testimoniPrev", "testimoniNext");
 }
 
 async function loadReviews() {
@@ -245,14 +296,12 @@ async function loadReviews() {
 
 function initReviewForm() {
   const form = document.getElementById("reviewForm");
-  if (!reviewOrderId || !reviewToken) return;
-  form.hidden = false;
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const status = document.getElementById("reviewStatus");
     const submit = document.getElementById("reviewSubmit");
     const rating = Number(new FormData(form).get("rating"));
-    const customerName = document.getElementById("reviewName").value.trim() || "Customer terverifikasi";
+    const customerName = document.getElementById("reviewName").value.trim() || "Customer";
     const comment = document.getElementById("reviewText").value.trim();
     if (!db) {
       status.textContent = "Form belum aktif. Admin perlu menyelesaikan konfigurasi Firebase.";
@@ -263,7 +312,8 @@ function initReviewForm() {
     status.textContent = "Mengirim ulasan…";
     status.className = "review-status";
     try {
-      await firestoreApi.setDoc(firestoreApi.doc(db, "reviews", reviewOrderId), { orderId: reviewOrderId, reviewToken, customerName, comment, rating, approved: false, createdAt: firestoreApi.serverTimestamp() });
+      // ID dokumen acak; ulasan tetap butuh persetujuan admin sebelum tampil publik.
+      await firestoreApi.addDoc(firestoreApi.collection(db, "reviews"), { customerName, comment, rating, approved: false, createdAt: firestoreApi.serverTimestamp() });
       form.reset();
       form.querySelectorAll("input, textarea, button").forEach((field) => { field.disabled = true; });
       status.textContent = "Terima kasih! Ulasannya udah kekirim kok, nanti muncul :p";
@@ -290,6 +340,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initYear();
   initLightbox();
   initLazyImages();
+  initCarousels();
   initReviewForm();
   loadReviews();
 });

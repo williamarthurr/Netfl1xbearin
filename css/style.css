@@ -463,7 +463,16 @@ img { max-width: 100%; display: block; }
 .rating-bar-row b { font-weight: 600; color: var(--text); text-align: right; }
 .rating-bar { height: 8px; overflow: hidden; border-radius: 999px; background: var(--bg-3); }
 .rating-bar i { display: block; height: 100%; border-radius: inherit; background: var(--grad); }
-.review-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.carousel { position: relative; }
+.review-list { display: flex; gap: 18px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+.review-list::-webkit-scrollbar { display: none; }
+.review-card { flex: 0 0 calc((100% - 36px) / 3); scroll-snap-align: start; }
+.carousel-arrow { position: absolute; top: 50%; transform: translateY(-50%); z-index: 2; width: 42px; height: 42px; border-radius: 50%; background: var(--card); border: 1px solid var(--border); color: var(--text); cursor: pointer; display: grid; place-items: center; padding: 0; transition: background var(--transition), border-color var(--transition), opacity var(--transition); }
+.carousel-arrow:hover { background: var(--card-hover); border-color: var(--red); }
+.carousel-arrow:disabled { opacity: 0.35; cursor: default; }
+.carousel-arrow:disabled:hover { background: var(--card); border-color: var(--border); }
+.carousel-arrow-prev { left: -8px; }
+.carousel-arrow-next { right: -8px; }
 .review-card, .review-empty, .review-form { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); }
 .review-card { padding: 22px; }
 .review-card-top { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
@@ -513,6 +522,12 @@ img { max-width: 100%; display: block; }
 .btn-sm { padding: 9px 15px; font-size: 13px; }
 .btn-danger { background: rgba(229, 9, 20, .12); border: 1px solid rgba(229, 9, 20, .35); color: #ff898f; }
 .admin-review-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 22px; }
+.admin-testimoni { margin-top: 34px; }
+.admin-testimoni form { margin-top: 16px; }
+.admin-testimoni-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; margin-top: 18px; }
+.admin-testimoni-card { position: relative; aspect-ratio: 9 / 16; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border); background: var(--bg-3); }
+.admin-testimoni-card img { width: 100%; height: 100%; object-fit: cover; }
+.admin-testimoni-card button { position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; padding: 0; line-height: 1; font-size: 16px; border-radius: 50%; }
 .admin-review-card { padding: 20px; }
 .admin-review-card > div:first-child { display: flex; flex-direction: column; }
 .admin-review-card p { color: var(--text-muted); font-size: 14px; white-space: pre-wrap; }
@@ -553,11 +568,16 @@ img { max-width: 100%; display: block; }
 /* ---------- Testimoni ---------- */
 .testimoni { background: var(--bg-2); }
 .testimoni-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
   gap: 22px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
 }
+.testimoni-grid::-webkit-scrollbar { display: none; }
 .testimoni-card {
+  flex: 0 0 clamp(240px, 29vw, 330px);
+  scroll-snap-align: start;
   border-radius: var(--radius);
   overflow: hidden;
   cursor: zoom-in;
@@ -806,8 +826,7 @@ img { max-width: 100%; display: block; }
 @media (max-width: 900px) {
   .features-grid, .steps { grid-template-columns: repeat(2, 1fr); }
   .hero-stats { grid-template-columns: repeat(2, 1fr); }
-  .testimoni-grid { grid-template-columns: repeat(2, 1fr); }
-  .review-list { grid-template-columns: repeat(2, 1fr); }
+  .review-card { flex-basis: calc((100% - 18px) / 2); }
   .admin-review-list { grid-template-columns: repeat(2, 1fr); }
 }
 
@@ -828,9 +847,12 @@ img { max-width: 100%; display: block; }
   .nav-links.open { right: 0; }
   .nav-toggle { display: flex; }
   .features-grid, .steps, .hero-stats { grid-template-columns: 1fr; }
-  .testimoni-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
   .reviews-summary { grid-template-columns: 1fr; gap: 22px; padding: 22px; }
-  .review-list { grid-template-columns: 1fr; }
+  .review-card { flex-basis: 88%; }
+  .carousel-arrow { width: 36px; height: 36px; }
+  .carousel-arrow-prev { left: -4px; }
+  .carousel-arrow-next { right: -4px; }
+  .testimoni-grid { gap: 12px; }
   .admin-grid, .admin-review-list { grid-template-columns: 1fr; }
   .admin-login { margin: 20px auto; padding: 28px 20px; }
   .section { padding: 70px 0; }
