@@ -188,10 +188,18 @@ async function loadTestimonialPhotos() {
     const photos = snapshot.docs.map((doc) => doc.data())
       .sort((a, b) => (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0));
     if (!photos.length) return;
+    // Dekode dulu semua gambar sebelum kartu dirender agar tidak ada kedipan skeleton.
+    // loading="lazy" sengaja tidak dipakai: data URL tidak perlu hemat download,
+    // dan lazy justru menunda load untuk kartu yang di luar layar (efek kedip di carousel).
+    await Promise.all(photos.map((photo) => new Promise((resolve) => {
+      const img = new Image();
+      img.onload = img.onerror = resolve;
+      img.src = photo.src;
+    })));
     const list = document.getElementById("testimoniList");
     list.insertAdjacentHTML("beforeend", photos.map((photo) => `<figure class="testimoni-card" data-src="${photo.src}">
       <div class="skeleton-media"></div>
-      <img src="${photo.src}" alt="${escapeHtml(photo.fileName || "Testimoni pelanggan")}" loading="lazy" decoding="async" />
+      <img src="${photo.src}" alt="${escapeHtml(photo.fileName || "Testimoni pelanggan")}" decoding="async" />
     </figure>`).join(""));
     list.querySelectorAll(".testimoni-card img").forEach(watchLazyImage);
     carouselSync.testimoni?.();

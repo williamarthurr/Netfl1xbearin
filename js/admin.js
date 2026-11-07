@@ -119,7 +119,7 @@ async function loadTestimonials() {
     const photos = snapshot.docs.map((item) => ({ id: item.id, ...item.data() })).sort((a, b) => (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0));
     if (!photos.length) { target.innerHTML = '<p class="review-empty">Belum ada foto terunggah.</p>'; return; }
     target.innerHTML = photos.map((photo) => `<div class="admin-testimoni-card">
-      <img src="${photo.src}" alt="${escapeHtml(photo.fileName || "Foto testimoni")}" loading="lazy">
+      <img src="${photo.src}" alt="${escapeHtml(photo.fileName || "Foto testimoni")}">
       <button class="btn btn-danger btn-sm" data-delete-photo="${photo.id}" aria-label="Hapus foto">×</button>
     </div>`).join("");
   } catch (error) {
