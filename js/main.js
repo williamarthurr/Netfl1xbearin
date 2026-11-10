@@ -25,9 +25,11 @@ async function initFirebase() {
 // Katalog paket
 const PACKAGES = [
   { duration: "1 Hari", device: "1 profile · 1 user", price: "4", per: "/ 1 hari", icon: "fi-br-film", featured: false },
+  { duration: "2 Hari", device: "1 profile · 1 user", price: "7", per: "/ 2 hari", icon: "fi-br-film", featured: false },
   { duration: "3 Hari", device: "1 profile · 1 user", price: "9", per: "/ 3 hari", icon: "fi-br-film", featured: false },
   { duration: "5 Hari", device: "1 profile · 1 user", price: "11", per: "/ 5 hari", icon: "fi-br-film", featured: false },
   { duration: "7 Hari", device: "1 profile · 1 user", price: "15", per: "/ 7 hari", icon: "fi-br-film", featured: false },
+  { duration: "1 Bulan", device: "1 profile · 2 user", price: "20", per: "/ bulan", icon: "fi-br-users", featured: false },
   { duration: "1 Bulan", device: "1 device", price: "40", per: "/ bulan", icon: "fi-br-laptop", featured: true },
   { duration: "1 Bulan", device: "2 device", price: "45", per: "/ bulan", icon: "fi-br-devices", featured: false },
 ];
@@ -58,7 +60,7 @@ function renderCatalog() {
         <div class="card-icon"><i class="fi ${pkg.icon}"></i></div>
         <h3 class="card-duration">${pkg.duration}</h3>
         <p class="card-device">${pkg.device}</p>
-        <div class="card-price">${formatPrice(pkg.price)}</small></div>
+        <div class="card-price">Rp ${formatPrice(pkg.price)}</div>
         <p class="card-per">${pkg.per}</p>
         <a href="${waLink(pkg)}" target="_blank" rel="noopener" class="btn btn-wa">Order via WhatsApp</a>
       </article>
