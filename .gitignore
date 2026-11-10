@@ -15,3 +15,7 @@ Desktop.ini
 # Node (kalau nanti pakai tooling)
 node_modules/
 npm-debug.log*
+
+# Secret lokal worker (wrangler dev) — jangan pernah di-push
+worker/.dev.vars
+worker/.wrangler/

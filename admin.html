@@ -43,6 +43,53 @@
         </form>
         <div class="admin-testimoni-list" id="adminTestimoniList"><p class="review-empty">Memuat foto…</p></div>
       </section>
+
+      <section class="admin-card admin-langganan">
+        <h2>Langganan pelanggan</h2>
+        <p class="admin-help">Catat pelanggan baru lalu pantau hitung mundur durasinya. Saat masa langganan habis, notifikasi otomatis dikirim ke Telegram admin (dicek tiap 10 menit oleh worker Cloudflare).</p>
+        <form id="langgananForm" class="langganan-form">
+          <label class="review-field">Nama pelanggan
+            <input id="langgananNama" type="text" maxlength="60" placeholder="Contoh: Budi" required>
+          </label>
+          <label class="review-field" id="paketWrap">Paket
+            <select id="langgananPaket">
+              <option value="1">1 hari</option>
+              <option value="3">3 hari</option>
+              <option value="5">5 hari</option>
+              <option value="7">7 hari</option>
+              <option value="30">1 bulan (30 hari)</option>
+              <option value="custom">Custom…</option>
+            </select>
+          </label>
+          <label class="review-field" id="langgananCustomWrap" hidden>Durasi (hari)
+            <input id="langgananCustom" type="number" min="0.01" max="3650" step="any" placeholder="Contoh: 14">
+          </label>
+          <button class="btn btn-primary" type="submit" id="tambahLanggananButton">Tambah</button>
+          <p class="review-status" id="langgananStatus" role="status"></p>
+        </form>
+        <div class="langganan-filter" id="langgananFilter">
+          <button class="btn btn-outline btn-sm" data-filter="semua">Semua</button>
+          <button class="btn btn-outline btn-sm" data-filter="aktif">Aktif</button>
+          <button class="btn btn-outline btn-sm" data-filter="habis">Habis</button>
+        </div>
+        <div class="langganan-list" id="langgananList"><p class="review-empty">Memuat langganan…</p></div>
+      </section>
+
+      <section class="admin-card admin-telegram">
+        <h2>Notifikasi Telegram</h2>
+        <p class="admin-help">Status koneksi ke worker Cloudflare yang mengirim notif langganan habis. Pesan test dipakai untuk memastikan bot berjalan.</p>
+        <div class="telegram-status" id="telegramStatus"><p class="review-empty">Memuat status…</p></div>
+        <div class="admin-actions">
+          <button class="btn btn-primary btn-sm" id="telegramTestButton">Kirim pesan test</button>
+        </div>
+        <p class="review-status" id="telegramStatusNote" role="status"></p>
+        <div class="sync-secret-row">
+          <span>Sync secret (kirim ke AI untuk dipasang di worker):</span>
+          <code id="syncSecretValue">…</code>
+          <button class="btn btn-outline btn-sm" id="copySecretButton" type="button">Salin</button>
+        </div>
+        <p class="admin-help telegram-help">Belum ada bot? Chat <strong>@BotFather</strong> di Telegram, kirim <code>/newbot</code>, ikuti langkahnya, lalu salin token-nya dan berikan ke AI untuk dipasang sebagai secret worker.</p>
+      </section>
     </section>
   </main>
   <script type="module" src="js/admin.js"></script>

@@ -15,3 +15,7 @@ export const adminEmails = [
   "ocravf@gmail.com",
   "itspjmgf@gmail.com"
 ];
+
+// URL worker notifikasi langganan (diisi setelah `npx wrangler deploy` di folder worker/).
+// Kosong = modul Telegram hanya menampilkan "Worker belum dihubungkan", modul langganan tetap jalan.
+export const notifyWorkerUrl = "https://netflixarin-notify.ravgg2530.workers.dev";

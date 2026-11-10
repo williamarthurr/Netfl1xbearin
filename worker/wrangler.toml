@@ -1,0 +1,12 @@
+name = "netflixarin-notify"
+main = "src/index.js"
+compatibility_date = "2025-11-01"
+
+# Cron tiap 10 menit (gratis). Diubah lewat file ini + `npx wrangler deploy`.
+[triggers]
+crons = ["*/10 * * * *"]
+
+# ID namespace diisi setelah: npx wrangler kv namespace create NOTIFY_KV
+[[kv_namespaces]]
+binding = "NOTIFY_KV"
+id = "7c4a856c41f8454f8308d6fe35049fad"

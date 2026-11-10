@@ -495,9 +495,10 @@ img { max-width: 100%; display: block; }
 .star-picker input:checked ~ label, .star-picker label:hover, .star-picker label:hover ~ label { color: #ffc107; }
 .star-picker input:focus-visible + label { outline: 2px solid var(--red); outline-offset: 3px; border-radius: 4px; }
 .review-field { display: block; margin: 16px 0; }
-.review-field input, .review-field textarea { display: block; width: 100%; margin-top: 7px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-3); color: var(--text); font: inherit; font-size: 14px; }
+.review-field[hidden] { display: none; }
+.review-field input, .review-field select, .review-field textarea { display: block; width: 100%; margin-top: 7px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-3); color: var(--text); font: inherit; font-size: 14px; }
 .review-field textarea { min-height: 110px; resize: vertical; }
-.review-field input:focus, .review-field textarea:focus { outline: 2px solid rgba(229, 9, 20, .45); border-color: var(--red); }
+.review-field input:focus, .review-field select:focus, .review-field textarea:focus { outline: 2px solid rgba(229, 9, 20, .45); border-color: var(--red); }
 .review-status { min-height: 20px; margin-top: 12px; font-size: 14px; color: var(--text-muted); }
 .review-status.success { color: #61d98a; }
 .review-status.error { color: #ff747b; }
@@ -535,6 +536,27 @@ img { max-width: 100%; display: block; }
 .status-pill { padding: 4px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; }
 .status-pill.pending { background: rgba(255, 193, 7, .12); color: #ffd45a; }
 .status-pill.approved { background: rgba(97, 217, 138, .12); color: #61d98a; }
+.status-pill.expired { background: rgba(229, 9, 20, .12); color: #ff898f; }
+
+/* Langganan + Telegram */
+.admin-langganan, .admin-telegram { margin-top: 34px; }
+.langganan-form { display: grid; grid-template-columns: 1.4fr 1fr auto; gap: 14px; align-items: end; margin-top: 16px; }
+.langganan-form .review-field { margin: 0; }
+.langganan-form .review-status { grid-column: 1 / -1; margin-top: 0; }
+.langganan-filter { display: flex; gap: 8px; margin-top: 18px; }
+.langganan-filter .active { border-color: rgba(229, 9, 20, .5); background: rgba(229, 9, 20, .12); color: #ff898f; }
+.langganan-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; margin-top: 18px; }
+.langganan-card { display: flex; flex-direction: column; gap: 10px; }
+.langganan-countdown { font-size: 19px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.langganan-countdown.expired-text { color: #ff747b; }
+.notif-badge { font-size: 12px; }
+.notif-badge.ok { color: #61d98a; }
+.notif-badge.wait { color: #ffd45a; }
+.telegram-status { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 6px; }
+.sync-secret-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 16px; font-size: 13px; color: var(--text-muted); }
+.sync-secret-row code { padding: 6px 10px; border-radius: 6px; background: var(--bg-3); color: #ff959a; font-size: 12px; overflow-wrap: anywhere; }
+.telegram-help code { background: var(--bg-3); padding: 2px 6px; border-radius: 4px; }
+@media (max-width: 720px) { .langganan-form { grid-template-columns: 1fr; } }
 
 /* ---------- Features ---------- */
 .keunggulan { background: var(--bg-2); }
