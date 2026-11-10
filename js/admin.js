@@ -227,6 +227,7 @@ async function workerFetch(path, options = {}) {
 }
 
 function subStatus(sub) {
+  if (sub.stopped) return "dihentikan";
   const ms = sub.expiresAt?.toMillis?.() ?? 0;
   const left = ms - Date.now();
   if (left <= 0) return "habis";
@@ -251,7 +252,7 @@ function updateCountdowns() {
   let statusChanged = false;
   for (const sub of subscriptions) {
     const countdown = document.querySelector(`[data-countdown="${sub.id}"]`);
-    if (!countdown) continue;
+    if (!countdown || sub.stopped) continue;
     const ms = sub.expiresAt?.toMillis?.() ?? 0;
     const left = ms - now;
     if (left > 0) {
@@ -281,11 +282,16 @@ function renderSubscriptions() {
   if (!filtered.length) { target.innerHTML = '<p class="review-empty">Tidak ada langganan di kategori ini.</p>'; return; }
   target.innerHTML = filtered.map((sub) => {
     const status = subStatus(sub);
-    const pill = status === "habis"
-      ? '<span class="status-pill expired">Habis</span>'
-      : status === "hampir"
-        ? '<span class="status-pill pending">Hampir habis</span>'
-        : '<span class="status-pill approved">Aktif</span>';
+    const pill = status === "dihentikan"
+      ? '<span class="status-pill stopped">Dihentikan</span>'
+      : status === "habis"
+        ? '<span class="status-pill expired">Habis</span>'
+        : status === "hampir"
+          ? '<span class="status-pill pending">Hampir habis</span>'
+          : '<span class="status-pill approved">Aktif</span>';
+    const toggleButton = status === "dihentikan"
+      ? `<button class="btn btn-outline btn-sm" data-resume="${sub.id}">Lanjutkan</button>`
+      : `<button class="btn btn-outline btn-sm" data-stop="${sub.id}">Stop</button>`;
     const notifBadge = status === "habis"
       ? (notifyState[`${sub.id}:${sub.expiresAt?.toMillis?.() || 0}`]
         ? '<span class="notif-badge ok">✓ Notif terkirim ke Telegram</span>'
@@ -296,8 +302,11 @@ function renderSubscriptions() {
         <strong>${escapeHtml(sub.customerName)}</strong>
         <span class="admin-meta">${escapeHtml(sub.packageName || "Paket custom")} · Berakhir ${formatDate(sub.expiresAt)}</span>
       </div>
-      <div class="langganan-countdown" data-countdown="${sub.id}">…</div>
+      ${sub.stopped
+        ? '<div class="langganan-countdown stopped-text">Dihentikan — tidak dihitung & tidak dinotif</div>'
+        : `<div class="langganan-countdown" data-countdown="${sub.id}">…</div>`}
       <div class="admin-actions">${pill}${notifBadge}
+        ${toggleButton}
         <button class="btn btn-outline btn-sm" data-extend="${sub.id}">Perpanjang</button>
         <button class="btn btn-danger btn-sm" data-delete-sub="${sub.id}">Hapus</button>
       </div>
@@ -326,7 +335,7 @@ async function syncToWorker() {
   try {
     const payload = {
       subs: subscriptions
-        .filter((sub) => sub.expiresAt?.toMillis)
+        .filter((sub) => sub.expiresAt?.toMillis() && !sub.stopped)
         .map((sub) => ({ id: sub.id, name: sub.customerName, packageLabel: sub.packageName, expiresAtMs: sub.expiresAt.toMillis() })),
     };
     const data = await workerFetch("/sync", { method: "POST", body: JSON.stringify(payload) });
@@ -447,8 +456,12 @@ $("#langgananFilter").addEventListener("click", (event) => {
 $("#langgananList").addEventListener("click", async (event) => {
   const extendId = event.target.dataset.extend;
   const deleteId = event.target.dataset.deleteSub;
-  if (!extendId && !deleteId) return;
+  const stopId = event.target.dataset.stop;
+  const resumeId = event.target.dataset.resume;
+  if (!extendId && !deleteId && !stopId && !resumeId) return;
   try {
+    if (stopId) await api.updateDoc(api.doc(db, "subscriptions", stopId), { stopped: true });
+    if (resumeId) await api.updateDoc(api.doc(db, "subscriptions", resumeId), { stopped: false });
     if (extendId) {
       const sub = subscriptions.find((item) => item.id === extendId);
       if (!sub) return;

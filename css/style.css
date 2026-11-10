@@ -537,6 +537,7 @@ img { max-width: 100%; display: block; }
 .status-pill.pending { background: rgba(255, 193, 7, .12); color: #ffd45a; }
 .status-pill.approved { background: rgba(97, 217, 138, .12); color: #61d98a; }
 .status-pill.expired { background: rgba(229, 9, 20, .12); color: #ff898f; }
+.status-pill.stopped { background: rgba(148, 148, 160, .14); color: #a9a9b4; }
 
 /* Langganan + Telegram */
 .admin-langganan, .admin-telegram { margin-top: 34px; }
@@ -549,6 +550,7 @@ img { max-width: 100%; display: block; }
 .langganan-card { display: flex; flex-direction: column; gap: 10px; }
 .langganan-countdown { font-size: 19px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .langganan-countdown.expired-text { color: #ff747b; }
+.langganan-countdown.stopped-text { color: var(--text-muted); font-size: 13px; font-weight: 600; }
 .notif-badge { font-size: 12px; }
 .notif-badge.ok { color: #61d98a; }
 .notif-badge.wait { color: #ffd45a; }

@@ -46,7 +46,7 @@
 
       <section class="admin-card admin-langganan">
         <h2>Langganan pelanggan</h2>
-        <p class="admin-help">Catat pelanggan baru lalu pantau hitung mundur durasinya. Saat masa langganan habis, notifikasi otomatis dikirim ke Telegram admin (dicek tiap 10 menit oleh worker Cloudflare).</p>
+        <p class="admin-help">Catat pelanggan baru lalu pantau hitung mundur durasinya. Saat masa langganan habis, notifikasi otomatis dikirim ke Telegram admin (dicek tiap 1 menit oleh worker Cloudflare).</p>
         <form id="langgananForm" class="langganan-form">
           <label class="review-field">Nama pelanggan
             <input id="langgananNama" type="text" maxlength="60" placeholder="Contoh: Budi" required>
@@ -71,6 +71,7 @@
           <button class="btn btn-outline btn-sm" data-filter="semua">Semua</button>
           <button class="btn btn-outline btn-sm" data-filter="aktif">Aktif</button>
           <button class="btn btn-outline btn-sm" data-filter="habis">Habis</button>
+          <button class="btn btn-outline btn-sm" data-filter="dihentikan">Dihentikan</button>
         </div>
         <div class="langganan-list" id="langgananList"><p class="review-empty">Memuat langganan…</p></div>
       </section>
