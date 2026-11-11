@@ -880,7 +880,7 @@ img { max-width: 100%; display: block; }
   transition: color 0.3s ease, opacity 0.3s ease;
   pointer-events: none;
 }
-.theme-icon svg { transform-origin: center; }
+.theme-icon svg { transform-origin: center; will-change: transform, opacity; }
 .theme-icon svg .sun-rays { transform-origin: center; transform-box: fill-box; }
 .theme-knob {
   position: absolute;
@@ -892,7 +892,8 @@ img { max-width: 100%; display: block; }
   background: var(--grad);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
   transform: translateX(3px);
-  transition: transform 0.3s cubic-bezier(0.34, 1.4, 0.64, 1), background 0.3s ease, box-shadow 0.3s ease;
+  transition: transform 0.3s cubic-bezier(0.34, 1.4, 0.64, 1);
+  will-change: transform;
   pointer-events: none;
 }
 .theme-toggle[data-theme="dark"] .theme-knob { transform: translateX(39px); }
@@ -908,13 +909,13 @@ img { max-width: 100%; display: block; }
   50% { transform: rotate(10deg); }
 }
 @keyframes moon-glow {
-  0%, 100% { filter: drop-shadow(0 0 1px rgba(224, 231, 255, 0.5)); }
-  50% { filter: drop-shadow(0 0 5px rgba(224, 231, 255, 1)); }
+  0%, 100% { opacity: 0.72; }
+  50% { opacity: 1; }
+}
 }
 html[data-theme="light"] .theme-icon-sun {
   color: #fff;
   opacity: 1;
-  filter: drop-shadow(0 0 2px rgba(180, 83, 9, 0.7));
 }
 html[data-theme="light"] .theme-icon-sun svg {
   animation: sun-spin 9s linear infinite;
@@ -961,11 +962,15 @@ html[data-theme="light"] {
   --shadow: 0 20px 50px rgba(23, 25, 40, 0.12);
 }
 
-/* Transisi lembut saat ganti tema */
-body,
-.section,
-.footer { transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease; }
-.navbar.scrolled { transition: background-color 0.35s ease, border-color 0.35s ease, padding 0.25s ease; }
+/* Transisi lembut saat ganti tema — hanya di desktop;
+   di layar sentuh fade bikin repaint halaman penuh terus-menerus (jank),
+   jadi di mobile tema langsung ganti (satu repaint, terasa lebih mulus) */
+@media (hover: hover) and (pointer: fine) {
+  body,
+  .section,
+  .footer { transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease; }
+  .navbar.scrolled { transition: background-color 0.35s ease, border-color 0.35s ease, padding 0.25s ease; }
+}
 
 html[data-theme="light"] .navbar.scrolled { background: rgba(255, 255, 255, 0.82); }
 html[data-theme="light"] .nav-links a:hover { color: var(--text); }
