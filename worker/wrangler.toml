@@ -2,9 +2,10 @@ name = "netflixarin-notify"
 main = "src/index.js"
 compatibility_date = "2025-11-01"
 
-# Cron tiap 10 menit (gratis). Diubah lewat file ini + `npx wrangler deploy`.
+# Cron tiap 1 menit (gratis; minimum interval Cloudflare). Notif langganan habis
+# maksimal telat ~1 menit. Worker menulis KV hemat (lihat src/index.js).
 [triggers]
-crons = ["*/10 * * * *"]
+crons = ["* * * * *"]
 
 # ID namespace diisi setelah: npx wrangler kv namespace create NOTIFY_KV
 [[kv_namespaces]]

@@ -41,15 +41,22 @@ async function readKvJson(env, key, fallback) {
   }
 }
 
+// TELEGRAM_CHAT_ID bisa berisi lebih dari satu chat dipisah koma — contoh: "111111,222222".
+// Semua chat terdaftar menerima notif (misal dua admin yang sama-sama chat bot).
 async function tgSend(env, text) {
-  const res = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: env.TELEGRAM_CHAT_ID, text, parse_mode: "HTML" }),
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!data.ok) throw new Error(data.description || `Telegram HTTP ${res.status}`);
-  return data;
+  const chatIds = String(env.TELEGRAM_CHAT_ID || "").split(",").map((id) => id.trim()).filter(Boolean);
+  if (!chatIds.length) throw new Error("TELEGRAM_CHAT_ID belum diisi.");
+  const errors = [];
+  for (const chatId of chatIds) {
+    const res = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!data.ok) errors.push(`${chatId}: ${data.description || `HTTP ${res.status}`}`);
+  }
+  if (errors.length) throw new Error(errors.join("; "));
 }
 
 function expiryMessage(sub) {
@@ -92,8 +99,16 @@ async function checkExpiries(env) {
       console.error(`Kirim notif ${key} gagal: ${error.message}`);
     }
   }
-  await env.NOTIFY_KV.put(KV_NOTIFIED, JSON.stringify(pruneNotified(notified, subs)));
-  await env.NOTIFY_KV.put(KV_LASTCRON, new Date().toISOString());
+  // Hemat penulisan KV (limit gratis 1.000 tulis/hari; cron berjalan tiap menit):
+  // tulis daftar "notified" hanya bila isinya berubah, dan "lastCron" maksimal sekali per 10 menit.
+  const before = JSON.stringify(notified);
+  const pruned = pruneNotified(notified, subs);
+  if (JSON.stringify(pruned) !== before) await env.NOTIFY_KV.put(KV_NOTIFIED, JSON.stringify(pruned));
+  const lastCronRaw = await env.NOTIFY_KV.get(KV_LASTCRON);
+  const lastMs = lastCronRaw ? Date.parse(lastCronRaw) || 0 : 0;
+  if (!lastCronRaw || sent > 0 || now - lastMs >= 600000) {
+    await env.NOTIFY_KV.put(KV_LASTCRON, new Date().toISOString());
+  }
   return sent;
 }
 
