@@ -406,6 +406,36 @@
     </div>
   </footer>
 
+  <!-- Modal form order katalog -->
+  <div class="order-modal" id="orderModal" hidden>
+    <div class="order-modal-overlay" data-close-order></div>
+    <div class="order-modal-box" role="dialog" aria-modal="true" aria-labelledby="orderModalTitle">
+      <button class="order-modal-close" type="button" data-close-order aria-label="Tutup form order">&times;</button>
+      <p class="section-eyebrow">ORDER FORM</p>
+      <h3 class="order-modal-title" id="orderModalTitle">Isi Detail Pesanan</h3>
+      <p class="order-modal-desc">Lengkapi datanya, nanti langsung dikirim ke WhatsApp admin.</p>
+      <form id="orderForm">
+        <label class="review-field">Durasi
+          <input id="orderDuration" type="text" readonly>
+        </label>
+        <label class="review-field">Nama
+          <input id="orderName" name="name" type="text" maxlength="40" required placeholder="Contoh: Narin" autocomplete="name">
+        </label>
+        <label class="review-field">Device + Seri
+          <input id="orderDevice" name="device" type="text" maxlength="60" required placeholder="Contoh: Redmi Note 12">
+        </label>
+        <label class="review-field">Lokasi
+          <input id="orderLocation" name="location" type="text" maxlength="60" required placeholder="Contoh: Jakarta Timur">
+        </label>
+        <label class="review-field">No. HP
+          <input id="orderPhone" name="phone" type="tel" maxlength="20" required placeholder="Contoh: 0812xxxxxxx" inputmode="tel" autocomplete="tel">
+        </label>
+        <button class="btn btn-primary" type="submit">Submit</button>
+        <p class="review-status" id="orderStatus" role="status"></p>
+      </form>
+    </div>
+  </div>
+
   <!-- Firebase SDK modular: konfigurasi ada di js/firebase-config.js -->
   <script type="module" src="js/main.js"></script>
 </body>

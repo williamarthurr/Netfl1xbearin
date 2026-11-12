@@ -1056,3 +1056,16 @@ html[data-theme="light"] .verified-badge { color: #15803d; }
   .brand-text { font-size: 16px; }
   .brand-sub { font-size: 12px; }
 }
+
+/* Modal form order katalog */
+.order-modal { position: fixed; inset: 0; z-index: 300; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.order-modal[hidden] { display: none; }
+.order-modal-overlay { position: absolute; inset: 0; background: rgba(5, 5, 10, .72); backdrop-filter: blur(4px); }
+.order-modal-box { position: relative; width: 100%; max-width: 430px; max-height: calc(100dvh - 40px); overflow-y: auto; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px 26px; box-shadow: var(--shadow); animation: orderModalIn .2s ease; }
+.order-modal-close { position: absolute; top: 14px; right: 14px; width: 34px; height: 34px; border: 1px solid var(--border); border-radius: 50%; background: var(--bg-3); color: var(--text-muted); font-size: 20px; line-height: 1; cursor: pointer; transition: var(--transition); }
+.order-modal-close:hover { color: var(--text); border-color: var(--red); }
+.order-modal-title { margin: 2px 0 6px; font-size: 24px; }
+.order-modal-desc { font-size: 14px; color: var(--text-muted); margin-bottom: 6px; }
+.order-modal .btn { width: 100%; margin-top: 8px; }
+.order-modal input[readonly] { color: var(--text-muted); }
+@keyframes orderModalIn { from { opacity: 0; transform: translateY(10px) scale(.98); } }

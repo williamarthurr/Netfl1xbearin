@@ -39,20 +39,70 @@ function formatPrice(price) {
   return (Number(price) * 1000).toLocaleString('id-ID');
 }
 
-function waLink(pkg) {
-  const text = encodeURIComponent(
-    `Halo Kak, saya mau order *NETFL1X PREMIUM SHARING*\n\n` +
-    `• Paket: ${pkg.duration}\n` +
-    `• Device: ${pkg.device}\n` +
-    `• Harga: Rp ${pkg.price}.000\n\n` +
-    `Mohon info cara pembayarannya ya. Terima kasih!`
-  );
-  return `https://wa.me/${WA_NUMBER}?text=${text}`;
+// Modal form order: user isi detail dulu, submit baru buka WhatsApp
+function initOrderModal() {
+  const modal = document.getElementById("orderModal");
+  const form = document.getElementById("orderForm");
+  const status = document.getElementById("orderStatus");
+  const nameInput = document.getElementById("orderName");
+  let pkg = null;
+
+  const open = (selected) => {
+    pkg = selected;
+    form.reset();
+    status.textContent = "";
+    status.className = "review-status";
+    document.getElementById("orderDuration").value =
+      `${selected.duration} (${selected.device}) — Rp ${formatPrice(selected.price)}`;
+    modal.hidden = false;
+    document.body.style.overflow = "hidden";
+    nameInput.focus();
+  };
+
+  const close = () => {
+    modal.hidden = true;
+    document.body.style.overflow = "";
+  };
+
+  document.querySelectorAll(".js-order-wa").forEach((btn) => {
+    btn.addEventListener("click", () => open(PACKAGES[Number(btn.dataset.pkg)]));
+  });
+
+  modal.querySelectorAll("[data-close-order]").forEach((el) => {
+    el.addEventListener("click", close);
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !modal.hidden) close();
+  });
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (!pkg) return;
+    const getValue = (id) => document.getElementById(id).value.trim();
+    const digits = getValue("orderPhone").replace(/\D/g, "");
+    if (digits.length < 9) {
+      status.textContent = "No. HP-nya kelihatan kurang lengkap. Cek lagi ya.";
+      status.className = "review-status error";
+      return;
+    }
+    const text = encodeURIComponent(
+      `✦ ݁˖ 𝐎𝐑𝐃𝐄𝐑 𝐅𝐎𝐑𝐌 𝐍𝐄𝐓𝐅𝐋𝐈𝐗 .✦ ݁˖\n\n` +
+      `Durasi : ${getValue("orderDuration")}\n` +
+      `Nama : ${getValue("orderName")}\n` +
+      `Device + Seri : ${getValue("orderDevice")}\n` +
+      `Lokasi : ${getValue("orderLocation")}\n` +
+      `No. HP : ${getValue("orderPhone")}\n\n` +
+      `𝘵𝘩𝘢𝘯𝘬 𝘺𝘰𝘶 𝘧𝘰𝘳 𝘰𝘳𝘥𝘦𝘳𝘪𝘯𝘨 𓂃 𓈒⋆.`
+    );
+    window.open(`https://wa.me/${WA_NUMBER}?text=${text}`, "_blank");
+    close();
+  });
 }
 
 function renderCatalog() {
   const grid = document.getElementById("catalogGrid");
-  grid.innerHTML = PACKAGES.map((pkg) => {
+  grid.innerHTML = PACKAGES.map((pkg, i) => {
     const badge = pkg.featured ? `<span class="card-badge">TERLARIS</span>` : "";
     return `
       <article class="card ${pkg.featured ? "card-featured" : ""}">
@@ -62,7 +112,7 @@ function renderCatalog() {
         <p class="card-device">${pkg.device}</p>
         <div class="card-price">Rp ${formatPrice(pkg.price)}</div>
         <p class="card-per">${pkg.per}</p>
-        <a href="${waLink(pkg)}" target="_blank" rel="noopener" class="btn btn-wa">Order via WhatsApp</a>
+        <button type="button" class="btn btn-wa js-order-wa" data-pkg="${i}">Order via WhatsApp</button>
       </article>
     `;
   }).join("");
@@ -433,6 +483,7 @@ function initReviewForm() {
 document.addEventListener("DOMContentLoaded", () => {
   initFirebase();
   renderCatalog();
+  initOrderModal();
   initGenericOrder();
   initFaq();
   initNavbar();
