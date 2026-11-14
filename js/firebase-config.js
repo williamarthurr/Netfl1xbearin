@@ -13,7 +13,8 @@ export const firebaseConfig = {
 // Masukkan semua email Google yang boleh memakai dashboard admin.
 export const adminEmails = [
   "ocravf@gmail.com",
-  "itspjmgf@gmail.com"
+  "itspjmgf@gmail.com",
+  "arinjualan1@gmail.com"
 ];
 
 // URL worker notifikasi langganan (diisi setelah `npx wrangler deploy` di folder worker/).
