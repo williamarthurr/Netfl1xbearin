@@ -482,6 +482,9 @@ img { max-width: 100%; display: block; }
 .review-stars { font-size: 16px; margin: 14px 0 8px; }
 .review-card p { color: var(--text-muted); font-size: 14px; white-space: pre-wrap; }
 .review-empty { grid-column: 1 / -1; color: var(--text-muted); text-align: center; padding: 28px; }
+.review-more { margin: 18px auto 0; text-align: center; }
+.review-more .btn { min-width: 220px; }
+.review-more .btn:disabled { opacity: .65; cursor: wait; }
 .review-form { max-width: 620px; margin: 40px auto 0; padding: 28px; }
 .review-form[hidden] { display: none; }
 .review-form-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }

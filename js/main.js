@@ -361,33 +361,50 @@ function formatReviewDate(timestamp) {
   return new Intl.DateTimeFormat("id-ID", { dateStyle: "medium" }).format(timestamp.toDate());
 }
 
-function renderReviewSummary(reviews) {
-  const average = reviews.length ? reviews.reduce((total, review) => total + review.rating, 0) / reviews.length : 0;
-  document.getElementById("ratingAverage").textContent = reviews.length ? average.toFixed(1) : "—";
+// Ringkasan rating dihitung terpisah dari kartu supaya tetap akurat saat kartu dimuat per halaman.
+function renderReviewSummary({ count, ratingSum, starCounts }) {
+  const average = count ? ratingSum / count : 0;
+  document.getElementById("ratingAverage").textContent = count ? average.toFixed(1) : "—";
   const stars = document.getElementById("ratingAverageStars");
   stars.textContent = "★".repeat(Math.round(average)) + "☆".repeat(5 - Math.round(average));
-  stars.setAttribute("aria-label", reviews.length ? `${average.toFixed(1)} dari 5 bintang` : "Belum ada rating");
-  document.getElementById("ratingCount").textContent = reviews.length ? `${reviews.length} ulasan terverifikasi` : "Belum ada ulasan";
+  stars.setAttribute("aria-label", count ? `${average.toFixed(1)} dari 5 bintang` : "Belum ada rating");
+  document.getElementById("ratingCount").textContent = count ? `${count} ulasan terverifikasi` : "Belum ada ulasan";
   document.getElementById("ratingBars").innerHTML = [5, 4, 3, 2, 1].map((star) => {
-    const count = reviews.filter((review) => review.rating === star).length;
-    const percentage = reviews.length ? (count / reviews.length) * 100 : 0;
-    return `<div class="rating-bar-row"><span>${star} ★</span><div class="rating-bar"><i style="width:${percentage}%"></i></div><b>${count}</b></div>`;
+    const starTotal = starCounts[star] || 0;
+    const percentage = count ? (starTotal / count) * 100 : 0;
+    return `<div class="rating-bar-row"><span>${star} ★</span><div class="rating-bar"><i style="width:${percentage}%"></i></div><b>${starTotal}</b></div>`;
   }).join("");
 }
 
-function renderReviews(reviews) {
+function summarizeReviews(reviews) {
+  const starCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  let ratingSum = 0;
+  for (const review of reviews) {
+    if (review.rating >= 1 && review.rating <= 5) {
+      ratingSum += review.rating;
+      starCounts[review.rating] += 1;
+    }
+  }
+  return { count: reviews.length, ratingSum, starCounts };
+}
+
+function reviewCardHtml(review) {
+  return `<article class="review-card">
+    <div class="review-card-top"><div><strong>${escapeHtml(review.customerName)}</strong></div><time>${formatReviewDate(review.createdAt)}</time></div>
+    <div class="review-stars" aria-label="${review.rating} dari 5 bintang">${"★".repeat(review.rating)}${"☆".repeat(5 - review.rating)}</div>
+    <p>${escapeHtml(review.comment)}</p>
+  </article>`;
+}
+
+function renderReviews(reviews, stats) {
   const list = document.getElementById("reviewList");
-  renderReviewSummary(reviews);
+  renderReviewSummary(stats || summarizeReviews(reviews));
   if (!reviews.length) {
     list.innerHTML = '<p class="review-empty">Belum ada ulasan, jadilah yang pertama!</p>';
     carouselSync.review?.();
     return;
   }
-  list.innerHTML = reviews.map((review) => `<article class="review-card">
-    <div class="review-card-top"><div><strong>${escapeHtml(review.customerName)}</strong></div><time>${formatReviewDate(review.createdAt)}</time></div>
-    <div class="review-stars" aria-label="${review.rating} dari 5 bintang">${"★".repeat(review.rating)}${"☆".repeat(5 - review.rating)}</div>
-    <p>${escapeHtml(review.comment)}</p>
-  </article>`).join("");
+  list.innerHTML = reviews.map(reviewCardHtml).join("");
   list.scrollLeft = 0; // render ulang selalu mulai dari kartu pertama
   // Chrome bisa re-snap scroll-snap setelah layout berikutnya; tawar ulang di frame itu.
   requestAnimationFrame(() => { list.scrollLeft = 0; carouselSync.review?.(); });
@@ -426,21 +443,100 @@ function initCarousels() {
   carouselSync.testimoni = initCarousel("testimoniList", "testimoniPrev", "testimoniNext");
 }
 
+// Pagination ulasan: kartu diambil 12 per halaman lewat cursor Firestore (startAfter),
+// jadi jumlah baca Firestore tetap kecil walau ulasan makin banyak.
+const REVIEW_PAGE_SIZE = 12;
+const reviewState = { lastDoc: null, hasMore: false, loadingMore: false };
+
+function reviewPageQuery(afterDoc) {
+  const parts = [
+    firestoreApi.collection(db, "reviews"),
+    firestoreApi.where("approved", "==", true),
+    firestoreApi.orderBy("createdAt", "desc"),
+    firestoreApi.limit(REVIEW_PAGE_SIZE),
+  ];
+  if (afterDoc) parts.push(firestoreApi.startAfter(afterDoc));
+  return firestoreApi.query(...parts);
+}
+
+// Statistik ringkasan (total, rata-rata, distribusi bintang) dihitung di server via count aggregation,
+// jadi tetap akurat tanpa perlu mengunduh semua ulasan. Rata-rata dihitung dari distribusi bintang
+// agar tidak butuh query sum yang menuntut composite index tambahan.
+async function fetchReviewStats() {
+  const counts = await Promise.all([5, 4, 3, 2, 1].map((star) =>
+    firestoreApi.getCountFromServer(firestoreApi.query(
+      firestoreApi.collection(db, "reviews"),
+      firestoreApi.where("approved", "==", true),
+      firestoreApi.where("rating", "==", star)
+    )).then((snapshot) => snapshot.data().count)
+  ));
+  const starCounts = { 5: counts[0], 4: counts[1], 3: counts[2], 2: counts[3], 1: counts[4] };
+  const count = counts[0] + counts[1] + counts[2] + counts[3] + counts[4];
+  const ratingSum = starCounts[5] * 5 + starCounts[4] * 4 + starCounts[3] * 3 + starCounts[2] * 2 + starCounts[1];
+  return { count, ratingSum, starCounts };
+}
+
+function updateReviewMoreButton() {
+  const button = document.getElementById("reviewMore");
+  if (!button) return;
+  button.hidden = !reviewState.hasMore;
+  button.disabled = reviewState.loadingMore;
+  button.textContent = reviewState.loadingMore ? "Memuat…" : "Muat ulasan lainnya";
+}
+
 async function loadReviews() {
   if (!db) { renderReviews([]); return; }
   try {
-    // Urutkan di browser agar tidak memerlukan composite index Firestore untuk halaman sederhana ini.
-    const reviewQuery = firestoreApi.query(firestoreApi.collection(db, "reviews"), firestoreApi.where("approved", "==", true), firestoreApi.limit(50));
-    const snapshot = await firestoreApi.getDocs(reviewQuery);
+    const [snapshot, stats] = await Promise.all([firestoreApi.getDocs(reviewPageQuery()), fetchReviewStats()]);
+    reviewState.lastDoc = snapshot.docs[snapshot.docs.length - 1] || null;
+    reviewState.hasMore = snapshot.docs.length === REVIEW_PAGE_SIZE;
+    renderReviews(snapshot.docs.map((doc) => doc.data()), stats);
+    updateReviewMoreButton();
+  } catch (error) {
+    // Gagal (mis. composite index Firestore belum dibuat) -> pakai perilaku lama supaya ulasan tetap tampil.
+    console.error("Query pagination ulasan gagal, pakai mode ambil semua:", error);
+    await loadReviewsFallback();
+  }
+}
+
+async function loadMoreReviews() {
+  if (!db || !reviewState.hasMore || reviewState.loadingMore || !reviewState.lastDoc) return;
+  reviewState.loadingMore = true;
+  updateReviewMoreButton();
+  try {
+    const snapshot = await firestoreApi.getDocs(reviewPageQuery(reviewState.lastDoc));
+    reviewState.lastDoc = snapshot.docs[snapshot.docs.length - 1] || reviewState.lastDoc;
+    reviewState.hasMore = snapshot.docs.length === REVIEW_PAGE_SIZE;
+    document.getElementById("reviewList").insertAdjacentHTML("beforeend", snapshot.docs.map((doc) => reviewCardHtml(doc.data())).join(""));
+    carouselSync.review?.();
+    reviewState.loadingMore = false;
+    updateReviewMoreButton();
+  } catch (error) {
+    console.error("Ulasan berikutnya gagal dimuat:", error);
+    reviewState.loadingMore = false;
+    updateReviewMoreButton();
+  }
+}
+
+// Mode darurat: ambil semua ulasan sekali lalu urutkan di browser (perilaku lama, baca Firestore jauh lebih banyak).
+async function loadReviewsFallback() {
+  try {
+    const snapshot = await firestoreApi.getDocs(
+      firestoreApi.query(firestoreApi.collection(db, "reviews"), firestoreApi.where("approved", "==", true))
+    );
     const reviews = snapshot.docs.map((doc) => doc.data()).sort((a, b) => {
       const aTime = a.createdAt?.toMillis?.() || 0;
       const bTime = b.createdAt?.toMillis?.() || 0;
       return bTime - aTime;
-    }).slice(0, 12);
+    });
+    reviewState.hasMore = false;
+    reviewState.lastDoc = null;
     renderReviews(reviews);
+    updateReviewMoreButton();
   } catch (error) {
     console.error("Ulasan tidak dapat dimuat:", error);
     document.getElementById("reviewList").innerHTML = '<p class="review-empty">Ulasan belum dapat dimuat. Coba lagi nanti.</p>';
+    updateReviewMoreButton();
   }
 }
 
@@ -494,5 +590,6 @@ document.addEventListener("DOMContentLoaded", () => {
   initLazyImages();
   initCarousels();
   initReviewForm();
+  document.getElementById("reviewMore").addEventListener("click", loadMoreReviews);
   loadReviews();
 });
