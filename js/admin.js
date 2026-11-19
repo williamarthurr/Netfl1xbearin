@@ -1,4 +1,5 @@
 import { firebaseConfig, adminEmails, notifyWorkerUrl } from "./firebase-config.js";
+import { initThemeToggle } from "./theme.js";
 
 let db;
 let auth;
@@ -28,7 +29,7 @@ async function loadReviews() {
   const target = $("#adminReviewList");
   target.innerHTML = '<p class="review-empty">Memuat ulasan…</p>';
   try {
-    const snapshot = await api.getDocs(api.query(api.collection(db, "reviews"), api.limit(50)));
+    const snapshot = await api.getDocs(api.collection(db, "reviews"));
     const reviews = snapshot.docs.map((item) => ({ id: item.id, ...item.data() })).sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
     if (!reviews.length) { target.innerHTML = '<p class="review-empty">Belum ada ulasan masuk.</p>'; return; }
     target.innerHTML = reviews.map((review) => `<article class="admin-review-card">
@@ -72,6 +73,7 @@ async function initFirebase() {
       loadReviews();
       loadTestimonials();
       initLangganan();
+      initKeuangan();
     });
   } catch (error) { console.error(error); setLoginStatus("Dashboard gagal dimuat. Periksa koneksi Firebase.", true); }
 }
@@ -481,6 +483,202 @@ $("#langgananList").addEventListener("click", async (event) => {
   } catch (error) { alert(`Aksi gagal: ${error.code || error.message || "coba lagi"}`); }
 });
 
+// ---------- Catatan keuangan harian ----------
+
+let keuanganTransactions = [];
+let keuanganDate = "";
+
+function rupiah(value) {
+  return "Rp " + Number(value || 0).toLocaleString("id-ID");
+}
+
+// Tanggal lokal (bukan UTC) supaya sama dengan nilai input type="date".
+function todayLocal() {
+  const now = new Date();
+  return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+}
+
+function setKeuanganStatus(message, isError = false) {
+  const status = $("#keuanganStatus");
+  status.textContent = message;
+  status.className = `review-status ${isError ? "error" : ""}`;
+}
+
+function renderKeuangan() {
+  let income = 0;
+  let outcome = 0;
+  for (const tx of keuanganTransactions) {
+    if (tx.type === "income") income += Number(tx.amount) || 0;
+    else if (tx.type === "outcome") outcome += Number(tx.amount) || 0;
+  }
+  const net = income - outcome;
+  $("#keuanganIncome").textContent = rupiah(income);
+  $("#keuanganOutcome").textContent = rupiah(outcome);
+  $("#keuanganTotal").textContent = rupiah(net);
+  $("#keuanganTotal").classList.toggle("negative", net < 0);
+  $("#keuanganCount").textContent = String(keuanganTransactions.length);
+
+  const target = $("#keuanganList");
+  if (!keuanganTransactions.length) {
+    target.innerHTML = '<p class="review-empty">Belum ada transaksi pada tanggal ini.</p>';
+    return;
+  }
+  const sorted = [...keuanganTransactions].sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+  target.innerHTML = sorted.map((tx) => {
+    const isIncome = tx.type === "income";
+    return `<article class="admin-review-card keuangan-row">
+      <div>
+        <strong>${escapeHtml(tx.note || (isIncome ? "Pemasukan" : "Pengeluaran"))}</strong>
+        <span class="admin-meta">${isIncome ? "Income" : "Outcome"} · ${formatDate(tx.createdAt)}</span>
+      </div>
+      <div class="keuangan-row-actions">
+        <strong class="keuangan-amount ${isIncome ? "income" : "outcome"}">${isIncome ? "+" : "−"}${rupiah(tx.amount)}</strong>
+        <button class="btn btn-danger btn-sm" data-delete-keuangan="${tx.id}">Hapus</button>
+      </div>
+    </article>`;
+  }).join("");
+}
+
+function shiftKeuanganDate(dateStr, days) {
+  const d = new Date(`${dateStr}T00:00:00`);
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+// Grafik batang 7 hari terakhir: satu query rentang, agregasi di browser tanpa library chart.
+function renderKeuanganChart(docs) {
+  const target = $("#keuanganChart");
+  const days = [];
+  for (let i = 6; i >= 0; i--) days.push(shiftKeuanganDate(keuanganDate, -i));
+  const buckets = days.map((date) => ({ date, income: 0, outcome: 0 }));
+  const byDate = Object.fromEntries(buckets.map((b) => [b.date, b]));
+  for (const tx of docs) {
+    const bucket = byDate[tx.date];
+    if (!bucket) continue;
+    if (tx.type === "income") bucket.income += Number(tx.amount) || 0;
+    else if (tx.type === "outcome") bucket.outcome += Number(tx.amount) || 0;
+  }
+  if (!buckets.some((b) => b.income || b.outcome)) {
+    target.innerHTML = '<div class="grafik-head"><strong>Tren 7 hari terakhir</strong></div><p class="grafik-empty">Belum ada transaksi pada 7 hari terakhir.</p>';
+    return;
+  }
+  const max = Math.max(...buckets.flatMap((b) => [b.income, b.outcome]), 1);
+  target.innerHTML = `<div class="grafik-head">
+    <strong>Tren 7 hari terakhir</strong>
+    <div class="grafik-legend"><span><i></i>Income</span><span><i class="outcome"></i>Outcome</span></div>
+  </div>
+  <div class="grafik-chart">${buckets.map((b) => {
+    const label = new Date(`${b.date}T00:00:00`).toLocaleDateString("id-ID", { weekday: "short" });
+    return `<div class="grafik-day">
+      <div class="grafik-bars">
+        <div class="grafik-bar" style="height:${(b.income / max) * 100}%" title="${escapeHtml(b.date)} · income ${rupiah(b.income)}"></div>
+        <div class="grafik-bar outcome" style="height:${(b.outcome / max) * 100}%" title="${escapeHtml(b.date)} · outcome ${rupiah(b.outcome)}"></div>
+      </div>
+      <span class="grafik-label">${escapeHtml(label)}</span>
+    </div>`;
+  }).join("")}</div>`;
+}
+
+async function loadKeuangan() {
+  const target = $("#keuanganList");
+  target.innerHTML = '<p class="review-empty">Memuat transaksi…</p>';
+  try {
+    const days = [];
+    for (let i = 6; i >= 0; i--) days.push(shiftKeuanganDate(keuanganDate, -i));
+    const snapshot = await api.getDocs(api.query(
+      api.collection(db, "transactions"),
+      api.where("date", ">=", days[0]),
+      api.where("date", "<=", days[days.length - 1])
+    ));
+    const all = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+    keuanganTransactions = all.filter((tx) => tx.date === keuanganDate);
+    renderKeuangan();
+    renderKeuanganChart(all);
+  } catch (error) {
+    console.error(error);
+    keuanganTransactions = [];
+    renderKeuangan();
+    $("#keuanganChart").innerHTML = '<div class="grafik-head"><strong>Tren 7 hari terakhir</strong></div><p class="grafik-empty">Grafik gagal dimuat. Pastikan Rules Firestore sudah diperbarui.</p>';
+    target.innerHTML = '<p class="review-empty">Transaksi gagal dimuat. Pastikan Rules Firestore sudah berisi koleksi "transactions".</p>';
+  }
+}
+
+async function initKeuangan() {
+  const input = $("#keuanganTanggal");
+  keuanganDate = input.value || todayLocal();
+  input.value = keuanganDate;
+  await loadKeuangan();
+}
+
+$("#keuanganTanggal").addEventListener("change", (event) => {
+  keuanganDate = event.target.value || todayLocal();
+  loadKeuangan();
+});
+
+// Di HP, ketuk area teks juga harus membuka picker — bukan hanya ikon kalender.
+$("#keuanganTanggal").addEventListener("click", (event) => {
+  const input = event.currentTarget;
+  if (typeof input.showPicker !== "function") return;
+  const rect = input.getBoundingClientRect();
+  if (event.clientX > rect.right - 36) return; // klik di ikon: biarkan perilaku native
+  try { input.showPicker(); } catch (e) { /* picker sudah terbuka atau diblokir browser */ }
+});
+
+$("#keuanganTambahToggle").addEventListener("click", () => {
+  const form = $("#keuanganForm");
+  const toggle = $("#keuanganTambahToggle");
+  const open = form.hidden;
+  form.hidden = !open;
+  toggle.textContent = open ? "Tutup form" : "+ Tambah transaksi";
+  toggle.setAttribute("aria-expanded", String(open));
+  if (open) $("#keuanganJenis").focus();
+});
+
+$("#keuanganForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const button = $("#tambahKeuanganButton");
+  const type = $("#keuanganJenis").value;
+  const amount = Number($("#keuanganJumlah").value);
+  const note = $("#keuanganCatatan").value.trim();
+  if (!Number.isFinite(amount) || amount <= 0) {
+    setKeuanganStatus("Jumlah harus angka lebih dari 0.", true);
+    return;
+  }
+  button.disabled = true;
+  setKeuanganStatus("Menyimpan…");
+  try {
+    await api.addDoc(api.collection(db, "transactions"), {
+      type,
+      amount,
+      note: note.slice(0, 100),
+      date: keuanganDate,
+      createdAt: api.serverTimestamp(),
+    });
+    setKeuanganStatus("Transaksi ditambahkan.", false);
+    event.target.reset();
+    $("#keuanganForm").hidden = true;
+    $("#keuanganTambahToggle").textContent = "+ Tambah transaksi";
+    $("#keuanganTambahToggle").setAttribute("aria-expanded", "false");
+    await loadKeuangan();
+  } catch (error) {
+    console.error(error);
+    setKeuanganStatus(`Gagal menambah transaksi (${error.code || "kesalahan tak terduga"}).${error.code === "permission-denied" ? " Pastikan Rules Firestore sudah diperbarui." : ""}`, true);
+  }
+  button.disabled = false;
+});
+
+$("#keuanganList").addEventListener("click", async (event) => {
+  const id = event.target.dataset.deleteKeuangan;
+  if (!id || !confirm("Hapus transaksi ini?")) return;
+  try {
+    await api.deleteDoc(api.doc(db, "transactions", id));
+    await loadKeuangan();
+  } catch (error) {
+    console.error(error);
+    alert(`Aksi gagal: ${error.code || error.message || "coba lagi"}`);
+  }
+});
+
 $("#telegramTestButton").addEventListener("click", async () => {
   setTelegramNote("Mengirim…");
   try {
@@ -500,4 +698,52 @@ $("#copySecretButton").addEventListener("click", async () => {
   }
 });
 
+// ---------- Navigasi menu dashboard ----------
+
+function setAdminSection(sectionId) {
+  document.querySelectorAll(".admin-section").forEach((section) => {
+    section.hidden = section.id !== sectionId;
+  });
+  document.querySelectorAll(".admin-nav-item").forEach((button) => {
+    const active = button.dataset.adminSection === sectionId;
+    button.classList.toggle("active", active);
+    if (active) button.setAttribute("aria-current", "page");
+    else button.removeAttribute("aria-current");
+  });
+}
+
+const adminSidebar = $("#adminSidebar");
+const adminOverlay = $("#adminSidebarOverlay");
+const adminSidebarToggle = $("#adminSidebarToggle");
+
+function closeAdminSidebar() {
+  adminSidebar.classList.remove("open");
+  adminOverlay.hidden = true;
+  adminSidebarToggle.setAttribute("aria-expanded", "false");
+}
+
+adminSidebarToggle.setAttribute("aria-expanded", "false");
+
+adminSidebarToggle.addEventListener("click", () => {
+  const open = !adminSidebar.classList.contains("open");
+  adminSidebar.classList.toggle("open", open);
+  adminOverlay.hidden = !open;
+  adminSidebarToggle.setAttribute("aria-expanded", String(open));
+});
+
+adminOverlay.addEventListener("click", closeAdminSidebar);
+$("#adminSidebarClose").addEventListener("click", closeAdminSidebar);
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && adminSidebar.classList.contains("open")) closeAdminSidebar();
+});
+
+$("#adminNav").addEventListener("click", (event) => {
+  const sectionId = event.target.dataset.adminSection;
+  if (!sectionId) return;
+  setAdminSection(sectionId);
+  closeAdminSidebar();
+});
+
+setAdminSection("adminReviews");
+initThemeToggle();
 initFirebase();

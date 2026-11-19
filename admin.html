@@ -8,12 +8,40 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
+  <script>
+    // Terapkan tema sebelum render agar tidak ada kedipan (FOUC)
+    try {
+      document.documentElement.dataset.theme =
+        localStorage.getItem("theme") || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    } catch (e) { document.documentElement.dataset.theme = "dark"; }
+  </script>
 </head>
 <body class="admin-page">
   <header class="admin-header">
     <div class="container admin-header-inner">
       <a class="brand" href="index.html"><span class="brand-mark">N</span><span class="brand-text">NETFL1X<span class="brand-sub">micicow</span></span></a>
-      <div class="admin-account" id="adminAccount" hidden><span id="adminEmailLabel"></span><button class="btn btn-outline btn-sm" id="logoutButton">Keluar</button></div>
+      <div class="admin-header-actions">
+        <div class="theme-toggle" id="themeToggle" role="switch" aria-checked="false" aria-label="Mode terang / gelap" tabindex="0" data-theme="dark">
+          <span class="theme-icon theme-icon-sun" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <circle cx="12" cy="12" r="4.2" fill="currentColor" stroke="none" />
+              <g class="sun-rays">
+                <path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3l1.7 1.7M17 17l1.7 1.7M18.7 5.3L17 7M7 17l-1.7 1.7" />
+              </g>
+            </svg>
+          </span>
+          <span class="theme-icon theme-icon-moon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-linejoin="round">
+              <path d="M20.6 13.1A8.5 8.5 0 1 1 10.9 3.4a7 7 0 0 0 9.7 9.7z" fill="currentColor" stroke="none" />
+            </svg>
+          </span>
+          <span class="theme-knob" aria-hidden="true"></span>
+        </div>
+        <div class="admin-account" id="adminAccount" hidden><span id="adminEmailLabel"></span><button class="btn btn-outline btn-sm" id="logoutButton">Keluar</button></div>
+        <button class="admin-sidebar-toggle" id="adminSidebarToggle" type="button" aria-label="Tampilkan atau sembunyikan menu" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
     </div>
   </header>
 
@@ -27,11 +55,29 @@
     </section>
 
     <section id="dashboard" hidden>
-      <div class="admin-title"><div><p class="section-eyebrow">DASHBOARD</p><h1>Moderasi ulasan</h1></div><a class="btn btn-outline btn-sm" href="index.html#ulasan">Lihat website</a></div>
+      <div class="admin-title"><div><p class="section-eyebrow">DASHBOARD</p><h1>Dashboard admin</h1></div></div>
 
-      <section class="admin-reviews"><div class="admin-title"><div><p class="section-eyebrow">MODERASI</p><h2>Ulasan masuk</h2></div><button class="btn btn-outline btn-sm" id="refreshReviews">Muat ulang</button></div><div class="admin-review-list" id="adminReviewList"><p class="review-empty">Memuat ulasan…</p></div></section>
+      <div class="admin-layout" id="adminLayout">
+        <div class="admin-sidebar-overlay" id="adminSidebarOverlay" hidden></div>
+        <aside class="admin-sidebar" id="adminSidebar">
+          <div class="admin-sidebar-head">
+            <span>Menu</span>
+            <button class="admin-sidebar-close" id="adminSidebarClose" type="button" aria-label="Tutup menu">×</button>
+          </div>
+          <nav class="admin-nav" id="adminNav" aria-label="Menu dashboard">
+            <button class="admin-nav-item" type="button" data-admin-section="adminReviews">Ulasan</button>
+            <button class="admin-nav-item" type="button" data-admin-section="adminTestimoni">Testimoni</button>
+            <button class="admin-nav-item" type="button" data-admin-section="adminLangganan">Langganan</button>
+            <button class="admin-nav-item" type="button" data-admin-section="adminKeuangan">Catatan keuangan Harian</button>
+            <button class="admin-nav-item" type="button" data-admin-section="adminTelegram">Telegram</button>
+            <a class="admin-nav-item" href="index.html#ulasan">Lihat website</a>
+          </nav>
+        </aside>
 
-      <section class="admin-card admin-testimoni">
+        <div class="admin-content">
+          <section class="admin-reviews admin-section" id="adminReviews"><div class="admin-title"><div><p class="section-eyebrow">MODERASI</p><h2>Ulasan masuk</h2></div><button class="btn btn-outline btn-sm" id="refreshReviews">Muat ulang</button></div><div class="admin-review-list" id="adminReviewList"><p class="review-empty">Memuat ulasan…</p></div></section>
+
+      <section class="admin-card admin-testimoni admin-section" id="adminTestimoni" hidden>
         <h2>Foto testimoni</h2>
         <p class="admin-help">Foto otomatis dikompres lalu tampil di landing page setelah 4 foto statis. Maksimal 1 MB per foto setelah kompresi.</p>
         <form id="testimoniUploadForm">
@@ -44,7 +90,7 @@
         <div class="admin-testimoni-list" id="adminTestimoniList"><p class="review-empty">Memuat foto…</p></div>
       </section>
 
-      <section class="admin-card admin-langganan">
+      <section class="admin-card admin-langganan admin-section" id="adminLangganan" hidden>
         <h2>Langganan pelanggan</h2>
         <p class="admin-help">Catat pelanggan baru lalu pantau hitung mundur durasinya. Saat masa langganan habis, notifikasi otomatis dikirim ke Telegram admin (dicek tiap 1 menit oleh worker Cloudflare).</p>
         <form id="langgananForm" class="langganan-form">
@@ -76,7 +122,42 @@
         <div class="langganan-list" id="langgananList"><p class="review-empty">Memuat langganan…</p></div>
       </section>
 
-      <section class="admin-card admin-telegram">
+      <section class="admin-card admin-keuangan admin-section" id="adminKeuangan" hidden>
+        <h2>Catat keuangan harian</h2>
+        <p class="admin-help">Catat pemasukan dan pengeluaran per tanggal. Ringkasan di bawah dihitung otomatis dari transaksi pada tanggal yang dipilih.</p>
+        <label class="review-field">Tanggal
+          <input id="keuanganTanggal" type="date">
+        </label>
+        <div class="keuangan-summary" id="keuanganSummary">
+          <div class="keuangan-stat"><span>Total income</span><strong id="keuanganIncome">Rp 0</strong></div>
+          <div class="keuangan-stat"><span>Total outcome</span><strong id="keuanganOutcome">Rp 0</strong></div>
+          <div class="keuangan-stat"><span>Net Profit</span><strong id="keuanganTotal">Rp 0</strong></div>
+          <div class="keuangan-stat"><span>Daily Transaction Count</span><strong id="keuanganCount">0</strong></div>
+        </div>
+        <div class="grafik" id="keuanganChart"></div>
+        <div class="admin-actions">
+          <button class="btn btn-primary btn-sm" id="keuanganTambahToggle" type="button" aria-expanded="false">+ Tambah transaksi</button>
+        </div>
+        <form id="keuanganForm" class="keuangan-form" hidden>
+          <label class="review-field">Jenis
+            <select id="keuanganJenis">
+              <option value="income">Income (pemasukan)</option>
+              <option value="outcome">Outcome (pengeluaran)</option>
+            </select>
+          </label>
+          <label class="review-field">Jumlah (Rp)
+            <input id="keuanganJumlah" type="number" min="0" step="1" placeholder="Contoh: 20000" required>
+          </label>
+          <label class="review-field">Catatan (opsional)
+            <input id="keuanganCatatan" type="text" maxlength="100" placeholder="Contoh: Pembayaran Budi">
+          </label>
+          <button class="btn btn-primary" type="submit" id="tambahKeuanganButton">Tambah transaksi</button>
+          <p class="review-status" id="keuanganStatus" role="status"></p>
+        </form>
+        <div class="keuangan-list" id="keuanganList"><p class="review-empty">Memuat transaksi…</p></div>
+      </section>
+
+      <section class="admin-card admin-telegram admin-section" id="adminTelegram" hidden>
         <h2>Notifikasi Telegram</h2>
         <p class="admin-help">Status koneksi ke worker Cloudflare yang mengirim notif langganan habis. Pesan test dipakai untuk memastikan bot berjalan.</p>
         <div class="telegram-status" id="telegramStatus"><p class="review-empty">Memuat status…</p></div>
@@ -90,7 +171,9 @@
           <button class="btn btn-outline btn-sm" id="copySecretButton" type="button">Salin</button>
         </div>
         <p class="admin-help telegram-help">Belum ada bot? Chat <strong>@BotFather</strong> di Telegram, kirim <code>/newbot</code>, ikuti langkahnya, lalu salin token-nya dan berikan ke AI untuk dipasang sebagai secret worker.</p>
-      </section>
+          </section>
+        </div>
+      </div>
     </section>
   </main>
   <script type="module" src="js/admin.js"></script>
