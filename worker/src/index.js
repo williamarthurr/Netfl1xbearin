@@ -1,5 +1,5 @@
 // Worker notifikasi langganan NetflixArin.
-// Cron tiap 10 menit: baca daftar langganan dari KV, kirim pesan Telegram
+// Cron tiap 1 menit (jadwal ada di wrangler.toml): baca daftar langganan dari KV, kirim pesan Telegram
 // untuk yang masa berlakunya sudah habis, lalu tandai agar tidak dikirim dua kali.
 // Dashboard admin yang mendorong daftar langganan ke endpoint /sync (dilindungi secret).
 

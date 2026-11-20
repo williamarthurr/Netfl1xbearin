@@ -19,7 +19,7 @@ Dokumen handover untuk melanjutkan, memelihara, atau mengembangkan website Netfl
 | Hosting | Cloudflare Pages, deploy otomatis dari branch `main` GitHub |
 | Library eksternal | Firebase JS SDK 10.14.1 (CDN gstatic, dynamic import), font Inter (Google Fonts), ikon Flaticon UIicons (CDN) |
 
-Domain production yang saat ini tercantum di meta tag `index.html`: `https://netfl1xbearin.pages.dev/`. URL worker notifikasi: `https://netflixarin-notify.ravgg2530.workers.dev`.
+Domain production yang saat ini tercantum di meta tag `index.html`: `https://www.micicow.my.id/`. URL worker notifikasi: `https://netflixarin-notify.ravgg2530.workers.dev`.
 
 ## Struktur folder
 
@@ -86,9 +86,9 @@ Setelah submit, browser membuka `https://wa.me/<nomor>?text=<pesan terformat>` b
 
 ### Rating dan ulasan
 
-- Ringkasan rating: rata-rata, bintang, jumlah ulasan, dan distribusi per bintang, dihitung di browser dari data yang sama.
+- Ringkasan rating: rata-rata, bintang, jumlah ulasan, dan distribusi per bintang dihitung lewat `getCountFromServer` per nilai rating, tanpa mengunduh semua ulasan.
 - Ulasan tampil sebagai carousel horizontal dengan panah; panah hanya muncul kalau kontennya melebihi lebar kontainer.
-- Query mengambil maksimal 50 ulasan `approved == true`, diurutkan terbaru di browser (sengaja begitu supaya tidak butuh composite index Firestore), lalu menampilkan maksimal 12 terbaru.
+- Ulasan diambil 12 per halaman memakai `startAfter` (cursor) dan diurutkan `createdAt desc`; butuh composite index (`approved` asc, `createdAt` desc) — lihat `FIREBASE_SETUP.md` §4.1. Kalau index belum ada, `main.js` fallback mengambil semua ulasan `approved: true` lalu mengurutkannya di browser.
 - Form ulasan: rating 1-5 (wajib), nama panggilan opsional (default "Customer", maks 40 karakter), komentar 10 sampai 500 karakter. Ulasan terkirim dengan `approved: false` dan menunggu persetujuan admin.
 - Firebase dimuat dengan dynamic import terpisah, jadi kalau CDN Firebase gagal, katalog dan fitur statis lain tetap jalan.
 
@@ -314,7 +314,7 @@ Tidak ada lagi link bertoken. Karena form terbuka untuk siapa pun, moderasi admi
 
 1. Buka `https://DOMAIN-ANDA/admin.html`. (File `_redirects` tidak ada di repo, jadi `/admin` tanpa `.html` hanya berfungsi jika kamu menambahkan redirect di dashboard Cloudflare Pages.)
 2. Login memakai Google account yang terdaftar sebagai admin.
-3. **Ulasan masuk**: **Setujui** agar tampil publik, atau **Hapus** untuk menghapus permanen. Daftar dimuat maksimal 50 ulasan terbaru; tombol **Muat ulang** untuk refresh.
+3. **Ulasan masuk**: **Setujui** agar tampil publik, atau **Hapus** untuk menghapus permanen. Daftar dimuat seluruhnya dan diurutkan terbaru; tombol **Muat ulang** untuk refresh.
 4. **Foto testimoni**: pilih satu atau beberapa foto, tekan **Unggah foto**. Foto otomatis dikompres dan langsung tampil di landing page; tombol × pada thumbnail menghapusnya.
 5. **Langganan pelanggan**:
    - Tambah pelanggan: nama + paket (1/3/5/7 hari, 1 bulan, atau custom dalam hari desimal).
@@ -392,10 +392,10 @@ Klik **Publish** Rules, lalu push perubahan JavaScript. Menghapus admin dilakuka
 
 - Admin email masih terlihat pada JavaScript publik dan Firestore Rules. Ini bukan credential, namun bila butuh privasi atau role yang lebih kompleks, pindahkan otorisasi ke Firebase custom claims atau backend/Cloudflare Worker.
 - Nomor WhatsApp (`WA_NUMBER`), kontak Telegram/X, dan harga paket di-hardcode di `js/main.js` dan `index.html`. Kalau sering berubah, pertimbangkan memindahkannya ke satu tempat (misal `firebase-config.js` atau Firestore).
-- Domain di meta Open Graph `index.html` masih `netfl1xbearin.pages.dev`. Ganti jika domain final berbeda.
-- Filter langganan sudah ada di dashboard; pencarian nama dan filter status ulasan belum ada.
+- Domain produksi dan meta Open Graph: `https://www.micicow.my.id/`. Kalau domain berubah, perbarui `og:url`, `og:image`, `twitter:image`, `canonical` di `index.html`, serta `robots.txt` dan `sitemap.xml`.
+- Filter langganan sudah ada di dashboard; yang belum ada: pencarian nama dan filter status ulasan di panel moderasi.
 - Form ulasan terbuka untuk siapa pun; validasi mengandalkan moderasi admin dan Rules. Bila spam menjadi masalah, pertimbangkan CAPTCHA atau Cloudflare Turnstile.
-- Untuk skala review sangat besar, pertimbangkan pagination, agregasi rating server-side, dan panel moderasi yang lebih lengkap.
+- Untuk skala review sangat besar, pertimbangkan panel moderasi yang lebih lengkap (pencarian/filter status) — pagination 12 per halaman dan agregasi rating server-side sudah diterapkan.
 - Jangan ubah Rules menjadi `allow read, write: if true`; itu membuka database ke publik.
 
 ## Keamanan repo

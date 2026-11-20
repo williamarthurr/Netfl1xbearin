@@ -12,6 +12,13 @@ Desktop.ini
 *.log
 *.tmp
 
+# Artefak tool lokal (hasil generate, bukan sumber proyek)
+.archify/
+.commandcode/
+.tmp-check/
+.tmp-ffmpeg/
+.zcode/
+
 # Node (kalau nanti pakai tooling)
 node_modules/
 npm-debug.log*

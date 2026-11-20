@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /worker/
+
+Sitemap: https://www.micicow.my.id/sitemap.xml

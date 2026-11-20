@@ -920,6 +920,13 @@ img { max-width: 100%; display: block; }
   outline: 2px solid var(--red);
   outline-offset: 3px;
 }
+.btn:focus-visible,
+.carousel-arrow:focus-visible,
+.lightbox-close:focus-visible,
+.order-modal-close:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 3px;
+}
 .theme-toggle.dragging { cursor: grabbing; }
 .theme-icon {
   position: relative;
@@ -997,7 +1004,11 @@ html[data-theme="dark"] .theme-knob {
 @media (prefers-reduced-motion: reduce) {
   .theme-icon svg,
   .theme-icon svg .sun-rays,
-  .theme-knob { animation: none !important; }
+  .theme-knob,
+  .skeleton-card,
+  .skeleton-media,
+  .order-modal-box { animation: none !important; }
+  html { scroll-behavior: auto; }
 }
 
 /* ---------- Light Mode (palet pink & coklat) ---------- */

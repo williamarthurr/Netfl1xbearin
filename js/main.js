@@ -41,6 +41,23 @@ function formatPrice(price) {
   return (Number(price) * 1000).toLocaleString('id-ID');
 }
 
+// Jaga Tab/Shift+Tab tetap berada di dalam dialog yang sedang terbuka.
+function trapFocus(container, event) {
+  const focusable = container.querySelectorAll(
+    'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  );
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
 // Modal form order: user isi detail dulu, submit baru buka WhatsApp
 function initOrderModal() {
   const modal = document.getElementById("orderModal");
@@ -48,8 +65,10 @@ function initOrderModal() {
   const status = document.getElementById("orderStatus");
   const nameInput = document.getElementById("orderName");
   let pkg = null;
+  let lastFocused = null;
 
   const open = (selected) => {
+    lastFocused = document.activeElement;
     pkg = selected;
     form.reset();
     status.textContent = "";
@@ -64,6 +83,7 @@ function initOrderModal() {
   const close = () => {
     modal.hidden = true;
     document.body.style.overflow = "";
+    lastFocused?.focus?.({ preventScroll: true });
   };
 
   document.querySelectorAll(".js-order-wa").forEach((btn) => {
@@ -76,6 +96,10 @@ function initOrderModal() {
 
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && !modal.hidden) close();
+  });
+
+  modal.addEventListener("keydown", (e) => {
+    if (e.key === "Tab") trapFocus(modal.querySelector(".order-modal-box"), e);
   });
 
   form.addEventListener("submit", (e) => {
@@ -192,26 +216,34 @@ function initLightbox() {
   const img = document.getElementById("lightboxImg");
   const close = document.getElementById("lightboxClose");
   const grid = document.getElementById("testimoniList");
+  let lastFocused = null;
 
   grid.addEventListener("click", (e) => {
     const card = e.target.closest(".testimoni-card");
     if (!card) return;
+    lastFocused = card;
+    card.setAttribute("tabindex", "-1");
     img.src = card.dataset.src;
     lightbox.classList.add("open");
     lightbox.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
+    close.focus();
   });
 
   const closeLightbox = () => {
     lightbox.classList.remove("open");
     lightbox.setAttribute("aria-hidden", "true");
     document.body.style.overflow = "";
-    img.src = "";
+    img.removeAttribute("src");
+    lastFocused?.focus?.({ preventScroll: true });
   };
 
   close.addEventListener("click", closeLightbox);
   lightbox.addEventListener("click", (e) => {
     if (e.target === lightbox) closeLightbox();
+  });
+  lightbox.addEventListener("keydown", (e) => {
+    if (e.key === "Tab") trapFocus(lightbox, e);
   });
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && lightbox.classList.contains("open")) closeLightbox();
