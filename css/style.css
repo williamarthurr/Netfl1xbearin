@@ -12,6 +12,11 @@
   --red-glow: rgba(229, 9, 20, 0.35);
   --accent: #e50914;
   --brown: #de7138;
+  --alt-accent: #ff87b4;
+  --alt-tint: rgba(255, 135, 180, 0.12);
+  --alt-border: rgba(255, 135, 180, 0.35);
+  --alt-glow: rgba(255, 135, 180, 0.08);
+  --alt-glow-2: rgba(222, 113, 56, 0.08);
   --radius: 16px;
   --radius-sm: 10px;
   --shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
@@ -294,6 +299,54 @@ img { max-width: 100%; display: block; }
   flex-wrap: wrap;
   margin-bottom: 50px;
 }
+
+/* Header ringkas untuk halaman paket lain */
+.hero-compact {
+  min-height: 0;
+  padding: 120px 0 28px;
+  content-visibility: visible;
+}
+.hero-compact .hero-eyebrow { font-size: 11px; margin-bottom: 12px; }
+.hero-compact .hero-title { font-size: clamp(32px, 4.5vw, 48px); margin-bottom: 12px; }
+.hero-compact .hero-desc { font-size: 15px; margin-bottom: 20px; }
+.hero-compact .hero-actions { margin-bottom: 0; }
+
+/* ---------- Pilih katalog dari tombol "Lihat Katalog" ---------- */
+.catalog-finder { position: relative; max-width: 560px; margin-bottom: 50px; }
+.catalog-finder .hero-actions { margin-bottom: 0; }
+.finder-hint { margin-top: 12px; font-size: 13px; font-weight: 600; color: var(--text-muted); }
+.finder-hint span { color: var(--red); margin-right: 4px; }
+.finder-panel {
+  position: absolute; top: calc(100% + 12px); left: 0; z-index: 10;
+  width: 100%; max-width: 420px; padding: 16px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+  animation: finderIn 0.2s ease;
+}
+.finder-panel[hidden] { display: none; }
+.finder-label {
+  font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--text-muted); font-weight: 700; margin-bottom: 12px;
+}
+.finder-options { display: grid; gap: 10px; }
+.finder-option {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); background: var(--bg-2);
+  transition: var(--transition);
+}
+.finder-option:hover { border-color: var(--red); background: var(--card-hover); transform: translateX(3px); }
+.finder-option-icon {
+  width: 38px; height: 38px; flex: 0 0 38px; border-radius: 10px;
+  background: rgba(229, 9, 20, 0.12); color: var(--red);
+  display: flex; align-items: center; justify-content: center; font-size: 18px;
+}
+.finder-option-text { display: grid; line-height: 1.3; }
+.finder-option-text strong { font-size: 15px; }
+.finder-option-text small { font-size: 12px; color: var(--text-muted); }
+.finder-option-arrow { margin-left: auto; color: var(--red); font-size: 18px; }
+@keyframes finderIn { from { opacity: 0; transform: translateY(-6px); } }
+
 .hero-stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -356,16 +409,18 @@ img { max-width: 100%; display: block; }
 .section-desc { color: var(--text-muted); font-size: 16px; }
 
 /* ---------- Catalog Cards ---------- */
+.katalog, .katalog-alt { padding: 70px 0; }
+.katalog .section-head { margin-bottom: 36px; }
 .cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 22px;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 14px;
 }
 .card {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 26px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
   transition: var(--transition);
@@ -389,52 +444,102 @@ img { max-width: 100%; display: block; }
 }
 .card-badge {
   position: absolute;
-  top: 18px;
-  right: 18px;
+  top: 12px;
+  right: 12px;
   background: var(--accent);
   color: #fff;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
-  padding: 4px 10px;
+  padding: 3px 8px;
   border-radius: 999px;
   letter-spacing: 0.5px;
 }
 .card-icon {
-  width: 46px;
-  height: 46px;
-  border-radius: 12px;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
   background: rgba(229, 9, 20, 0.12);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
-  color: var(--red);
-  margin-bottom: 18px;
-}
-.card-icon .fi { font-size: 22px; line-height: 1; }
-.card-duration {
   font-size: 20px;
-  font-weight: 800;
-  margin-bottom: 4px;
-}
-.card-device {
-  font-size: 13px;
-  color: var(--text-muted);
-  margin-bottom: 16px;
-}
-.card-price {
-  font-size: 32px;
-  font-weight: 900;
   color: var(--red);
+  margin-bottom: 12px;
+}
+.card-icon .fi { font-size: 18px; line-height: 1; }
+.card-duration {
+  font-size: 17px;
+  font-weight: 800;
   margin-bottom: 2px;
 }
+.card-device {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+.card-price {
+  font-size: 26px;
+  font-weight: 900;
+  color: var(--red);
+  margin-bottom: 0;
+}
 .card-price small {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text-muted);
 }
-.card-per { font-size: 12px; color: var(--text-muted); margin-bottom: 20px; }
-.card .btn { margin-top: auto; }
+.card-per { font-size: 11px; color: var(--text-muted); margin-bottom: 14px; }
+.card .btn { margin-top: auto; padding: 10px 12px; font-size: 13px; }
+
+/* ---------- Katalog alternatif (Viu & Video) ---------- */
+.katalog-alt {
+  position: relative; overflow: hidden;
+  border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  background:
+    radial-gradient(ellipse at 12% 0%, var(--alt-glow) 0%, transparent 50%),
+    radial-gradient(ellipse at 88% 100%, var(--alt-glow-2) 0%, transparent 50%);
+}
+.katalog-alt .section-eyebrow { color: var(--alt-accent); }
+.katalog-alt .container { position: relative; z-index: 1; }
+.catalog-group-list { display: grid; gap: 36px; }
+.group-title {
+  display: flex; align-items: center; gap: 14px;
+  font-size: 13px; letter-spacing: 2.5px; font-weight: 800;
+  color: var(--alt-accent); text-transform: uppercase; margin-bottom: 16px;
+}
+.group-title::before, .group-title::after {
+  content: ""; height: 1px; flex: 1; background: var(--border);
+}
+.group-title span { white-space: nowrap; }
+.catalog-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px; justify-items: center;
+}
+.katalog-alt .card { width: 100%; max-width: 260px; }
+.card-group {
+  display: inline-block;
+  font-size: 10px; font-weight: 800; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--alt-accent);
+  margin-bottom: 8px;
+}
+.card-alt { border-color: var(--alt-border); }
+.card-alt::before { background: var(--alt-accent); }
+.card-alt .card-icon { background: var(--alt-tint); color: var(--alt-accent); }
+.card-alt .card-price { color: var(--alt-accent); }
+.card-alt.card-featured {
+  border-color: var(--alt-accent);
+  background: linear-gradient(180deg, var(--alt-tint), var(--card));
+}
+.card-no-device .card-duration { margin-bottom: 16px; }
+.katalog-alt .decor {
+  position: absolute; pointer-events: none; user-select: none;
+  color: var(--alt-accent); opacity: 0.26; line-height: 1;
+}
+.decor-heart-1 { top: 14%; left: 4%; font-size: 28px; transform: rotate(-14deg); }
+.decor-star-1 { top: 20%; right: 5%; font-size: 22px; }
+.decor-heart-2 { bottom: 15%; right: 6%; font-size: 24px; transform: rotate(12deg); }
+.decor-star-2 { bottom: 23%; left: 6%; font-size: 18px; }
 
 /* ---------- Rating & Review ---------- */
 .reviews { background: var(--bg-2); }
@@ -1026,6 +1131,11 @@ html[data-theme="light"] {
   --red-dark: #9c1450;
   --red-glow: rgba(194, 24, 91, 0.16);
   --accent: #c2185b;
+  --alt-accent: #c2185b;
+  --alt-tint: rgba(194, 24, 91, 0.09);
+  --alt-border: rgba(194, 24, 91, 0.28);
+  --alt-glow: rgba(194, 24, 91, 0.07);
+  --alt-glow-2: rgba(222, 113, 56, 0.10);
   --shadow: 0 20px 50px rgba(122, 63, 30, 0.14);
 }
 
@@ -1043,6 +1153,7 @@ html[data-theme="light"] .navbar.scrolled { background: rgba(255, 250, 248, 0.86
 html[data-theme="light"] .nav-links a:hover { color: var(--text); }
 html[data-theme="light"] .footer { background: #fffaf8; }
 html[data-theme="light"] .footer-links a:hover { color: var(--text); }
+html[data-theme="light"] .finder-option-icon { background: rgba(194, 24, 91, 0.10); }
 html[data-theme="light"] .hero-bg {
   background:
     radial-gradient(ellipse at 70% 20%, rgba(194, 24, 91, 0.13) 0%, transparent 55%),
@@ -1149,10 +1260,24 @@ html[data-theme="light"] .sync-secret-row code { color: #963f55; }
   .hero-actions { gap: 12px; }
   .cta-actions .btn { flex: 1 1 100%; }
   .contact-cards { grid-template-columns: 1fr; }
-  .cards-grid { grid-template-columns: 1fr 1fr; gap: 14px; }
-  .card { padding: 20px; }
-  .card-price { font-size: 26px; }
-  .btn-wa { font-size: 14px; padding: 12px 10px; }
+  .cards-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .catalog-group-list { gap: 26px; }
+  .catalog-groups { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .katalog-alt .card { max-width: none; }
+  .catalog-groups .card:only-child,
+  .catalog-groups .card:last-child:nth-child(odd) {
+    grid-column: 1 / -1; justify-self: center; max-width: 260px;
+  }
+  .group-title { font-size: 12px; letter-spacing: 1.5px; margin-bottom: 12px; }
+  .katalog-alt .decor { display: none; }
+  .card { padding: 14px; }
+  .card-icon { width: 34px; height: 34px; margin-bottom: 10px; }
+  .card-icon .fi { font-size: 16px; }
+  .card-duration { font-size: 15px; }
+  .card-price { font-size: 23px; }
+  .card-per { margin-bottom: 12px; }
+  .card .btn { padding: 10px 6px; }
+  .btn-wa { font-size: 12px; white-space: nowrap; }
   .section-head { margin-bottom: 36px; }
   .nav-cta { display: none; }
   .brand-text { font-size: 16px; }

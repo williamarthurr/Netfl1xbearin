@@ -90,10 +90,32 @@
         Netfl1x Premium Sharing dengan sistem <strong>1 profile = 1 user</strong>.
         Pribadi, aman, dan bebas iklan. Pilih durasi, langsung nonton.
       </p>
-      <div class="hero-actions">
-        <a href="#katalog" class="btn btn-primary btn-lg">Lihat Katalog</a>
-        <a href="#" class="btn btn-outline btn-lg js-order">Order Sekarang</a>
+      <!-- Tombol Lihat Katalog = pintu memilih katalog -->
+      <div class="catalog-finder">
+        <div class="hero-actions">
+          <button class="btn btn-primary btn-lg" id="catalogMenuBtn" type="button" aria-expanded="false" aria-controls="catalogMenu">
+            Lihat Katalog <span aria-hidden="true">▾</span>
+          </button>
+          <a href="#" class="btn btn-outline btn-lg js-order">Order Sekarang</a>
+        </div>
+        <p class="finder-hint"><span aria-hidden="true">♥</span> Cari paket aplikasi lainnya? Klik katalog ya!</p>
+        <div class="finder-panel" id="catalogMenu" hidden>
+          <p class="finder-label">Pilih katalog</p>
+          <div class="finder-options">
+            <a href="#katalog" class="finder-option" data-finder-link>
+              <span class="finder-option-icon" aria-hidden="true"><i class="fi fi-br-film"></i></span>
+              <span class="finder-option-text"><strong>Netflix</strong><small>Premium Sharing</small></span>
+              <span class="finder-option-arrow" aria-hidden="true">→</span>
+            </a>
+            <a href="paket-lain.html" class="finder-option" data-finder-link>
+              <span class="finder-option-icon" aria-hidden="true"><i class="fi fi-br-play"></i></span>
+              <span class="finder-option-text"><strong>Viu &amp; Video</strong><small>Paket sharing lainnya</small></span>
+              <span class="finder-option-arrow" aria-hidden="true">→</span>
+            </a>
+          </div>
+        </div>
       </div>
+
       <div class="hero-stats">
         <div class="stat">
           <span class="stat-num">1</span>
@@ -131,7 +153,7 @@
     <div class="container">
       <div class="section-head">
         <p class="section-eyebrow">DAFTAR HARGA</p>
-        <h2 class="section-title">Pilih Paket Kamu</h2>
+        <h2 class="section-title">Netflix</h2>
         <p class="section-desc">Harga per profile, bukan per akun. Kamu dapat profile sendiri, jadi riwayat tontonan tetap privat.</p>
       </div>
 

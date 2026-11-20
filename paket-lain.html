@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Paket Lain — Viu &amp; Video | micicow</title>
+  <meta name="description" content="Paket sharing Viu & Video dari micicow. Pilih layanan & durasi, order cepat via WhatsApp." />
+  <meta name="theme-color" content="#0b0b0f" />
+  <link rel="icon" href="favicon.ico" sizes="any" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/2.6.0/uicons-bold-rounded/css/uicons-bold-rounded.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script>
+    // Terapkan tema sebelum render agar tidak ada kedipan (FOUC)
+    try {
+      document.documentElement.dataset.theme =
+        localStorage.getItem("theme") || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    } catch (e) { document.documentElement.dataset.theme = "dark"; }
+  </script>
+</head>
+<body>
+  <!-- Navbar -->
+  <header class="navbar" id="navbar">
+    <div class="container nav-inner">
+      <a href="index.html#home" class="brand">
+        <span class="brand-mark">N</span>
+        <span class="brand-text">NETFL1X<span class="brand-sub">micicow</span></span>
+      </a>
+      <nav class="nav-links">
+        <a href="index.html#home">Home</a>
+        <a href="index.html#katalog">Netflix</a>
+        <a href="paket-lain.html">Paket Lain</a>
+        <a href="index.html#cara-order">Cara Order</a>
+        <a href="index.html#faq">FAQ</a>
+        <a href="index.html#contact">Contact</a>
+      </nav>
+      <a href="index.html#katalog" class="btn btn-primary nav-cta">Kembali ke Netflix</a>
+      <div class="theme-toggle" id="themeToggle" role="switch" aria-checked="false" aria-label="Mode terang / gelap" tabindex="0" data-theme="dark">
+        <span class="theme-icon theme-icon-sun" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <circle cx="12" cy="12" r="4.2" fill="currentColor" stroke="none" />
+            <g class="sun-rays">
+              <path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3l1.7 1.7M17 17l1.7 1.7M18.7 5.3L17 7M7 17l-1.7 1.7" />
+            </g>
+          </svg>
+        </span>
+        <span class="theme-icon theme-icon-moon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-linejoin="round">
+            <path d="M20.6 13.1A8.5 8.5 0 1 1 10.9 3.4a7 7 0 0 0 9.7 9.7z" fill="currentColor" stroke="none" />
+          </svg>
+        </span>
+        <span class="theme-knob" aria-hidden="true"></span>
+      </div>
+      <button class="nav-toggle" id="navToggle" aria-label="Buka menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Header halaman -->
+  <section class="hero hero-compact" id="home">
+    <div class="hero-bg"></div>
+    <div class="container hero-inner">
+      <p class="hero-eyebrow">✦ PAKET LAINNYA ✦</p>
+      <h1 class="hero-title">Viu <span class="grad">&amp;</span> Video</h1>
+      <p class="hero-desc">Paket sharing aplikasi lain dari micicow. Pilih layanan &amp; durasi, langsung order via WhatsApp.</p>
+      <div class="hero-actions">
+        <a href="index.html" class="btn btn-outline btn-lg">← Kembali ke Netflix</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Katalog Viu & Video -->
+  <section class="section katalog katalog-alt" id="katalog-viu">
+    <div class="container">
+      <div class="section-head">
+        <p class="section-eyebrow">DAFTAR HARGA</p>
+        <h2 class="section-title">Pilih Paket Kamu</h2>
+        <p class="section-desc">Semua paket tersedia di bawah ini. Pilih layanan &amp; durasi yang paling pas buat kamu.</p>
+      </div>
+      <div class="catalog-group-list" id="viuGroups">
+        <!-- Diisi JS -->
+      </div>
+    </div>
+    <span class="decor decor-heart-1" aria-hidden="true">♥</span>
+    <span class="decor decor-star-1" aria-hidden="true">✦</span>
+    <span class="decor decor-heart-2" aria-hidden="true">♥</span>
+    <span class="decor decor-star-2" aria-hidden="true">✦</span>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <a href="index.html#home" class="brand">
+        <span class="brand-mark">N</span>
+        <span class="brand-text">NETFL1X<span class="brand-sub">micicow</span></span>
+      </a>
+      <p class="footer-note">© <span id="year"></span> Netfl1x micicow. Semua harga dalam Rupiah (IDR).</p>
+      <div class="footer-links">
+        <a href="index.html#katalog">Netflix</a>
+        <a href="paket-lain.html">Paket Lain</a>
+        <a href="index.html#cara-order">Cara Order</a>
+        <a href="index.html#faq">FAQ</a>
+        <a href="https://t.me/rainoirie" target="_blank" rel="noopener">Telegram</a>
+        <a href="https://x.com/micicollect" target="_blank" rel="noopener">X</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Modal form order katalog -->
+  <div class="order-modal" id="orderModal" hidden>
+    <div class="order-modal-overlay" data-close-order></div>
+    <div class="order-modal-box" role="dialog" aria-modal="true" aria-labelledby="orderModalTitle">
+      <button class="order-modal-close" type="button" data-close-order aria-label="Tutup form order">&times;</button>
+      <p class="section-eyebrow">ORDER FORM</p>
+      <h3 class="order-modal-title" id="orderModalTitle">Isi Detail Pesanan</h3>
+      <p class="order-modal-desc">Lengkapi datanya, nanti langsung dikirim ke WhatsApp admin.</p>
+      <form id="orderForm">
+        <label class="review-field">Durasi
+          <input id="orderDuration" type="text" readonly>
+        </label>
+        <label class="review-field">Nama
+          <input id="orderName" name="name" type="text" maxlength="40" required placeholder="Contoh: Narin" autocomplete="name">
+        </label>
+        <label class="review-field">Device + Seri
+          <input id="orderDevice" name="device" type="text" maxlength="60" required placeholder="Contoh: Redmi Note 12">
+        </label>
+        <label class="review-field">Lokasi
+          <input id="orderLocation" name="location" type="text" maxlength="60" required placeholder="Contoh: Jakarta Timur">
+        </label>
+        <label class="review-field">No. HP
+          <input id="orderPhone" name="phone" type="tel" maxlength="20" required placeholder="Contoh: 0812xxxxxxx" inputmode="tel" autocomplete="tel">
+        </label>
+        <button class="btn btn-primary" type="submit">Submit</button>
+        <p class="review-status" id="orderStatus" role="status"></p>
+      </form>
+    </div>
+  </div>
+
+  <script type="module" src="js/paket-lain.js"></script>
+</body>
+</html>
