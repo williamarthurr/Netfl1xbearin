@@ -247,7 +247,7 @@ img { max-width: 100%; display: block; }
   display: flex;
   align-items: center;
   padding: 120px 0 80px;
-  overflow: hidden;
+  overflow: visible; /* dropdown katalog boleh keluar dari hero */
 }
 .hero-bg {
   position: absolute;
@@ -971,7 +971,8 @@ img { max-width: 100%; display: block; }
   content-visibility: auto;
   contain-intrinsic-size: 800px;
 }
-.hero { content-visibility: auto; contain-intrinsic-size: 100vh; }
+/* Hero selalu di atas fold & punya dropdown absolut: jangan pakai paint containment. */
+.hero { content-visibility: visible; }
 
 /* Hover effect hanya untuk perangkat yang punya pointer presisi (bukan touch) */
 @media (hover: hover) {

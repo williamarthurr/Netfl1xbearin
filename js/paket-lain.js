@@ -26,7 +26,8 @@ document.addEventListener("DOMContentLoaded", () => {
   initThemeToggle();
   initNavbar();
   initMobileNav();
-  renderAltCatalog();
+  renderAltCatalog("viu", "viuGroups");
+  renderAltCatalog("disney", "disneyGroups");
   initOrderModal();
   document.getElementById("year").textContent = new Date().getFullYear();
 });

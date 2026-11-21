@@ -1,4 +1,4 @@
-// Data paket & komponen katalog yang dipakai halaman utama (Netflix) dan halaman paket lain.
+// Data paket & komponen katalog yang dipakai halaman utama (Netflix) dan halaman paket lain (Viu, Video, Disney+).
 
 // Nomor WhatsApp reseller, format internasional tanpa +
 export const WA_NUMBER = "6287782164717";
@@ -21,6 +21,10 @@ export const PACKAGES = [
   { catalog: "viu", group: "VIDEO PRIVATE", service: "Video Private", duration: "1 Minggu", device: "all device", price: "25", per: "/ minggu", icon: "fi-br-film" },
   { catalog: "viu", group: "VIDEO PRIVATE", service: "Video Private", duration: "1 Bulan", device: "mobile only", price: "30", per: "/ bulan", icon: "fi-br-film" },
   { catalog: "viu", group: "VIDEO PRIVATE", service: "Video Private", duration: "1 Bulan", device: "all device", price: "50", per: "/ bulan", icon: "fi-br-laptop" },
+  // Disney+ — sharing 6 user
+  { catalog: "disney", group: "DISNEY+ SHARING 6 USER", service: "Disney+", duration: "1 Hari", device: "6 user sharing", price: "5", per: "/ hari", icon: "fi-br-film" },
+  { catalog: "disney", group: "DISNEY+ SHARING 6 USER", service: "Disney+", duration: "7 Hari", device: "6 user sharing", price: "15", per: "/ 7 hari", icon: "fi-br-film" },
+  { catalog: "disney", group: "DISNEY+ SHARING 6 USER", service: "Disney+", duration: "1 Bulan", device: "6 user sharing", price: "25", per: "/ bulan", icon: "fi-br-film" },
 ];
 
 export function formatPrice(price) {
@@ -134,17 +138,17 @@ export function cardHtml(pkg, index, variant = "", groupLabel = "") {
   `;
 }
 
-// Katalog Viu & Video dikelompokkan per klasifikasi layanan.
-export function renderAltCatalog() {
-  const root = document.getElementById("viuGroups");
+// Katalog alternatif (Viu/Video/Disney+) dikelompokkan per klasifikasi layanan.
+export function renderAltCatalog(catalog = "viu", rootId = "viuGroups") {
+  const root = document.getElementById(rootId);
   if (!root) return;
-  const groups = [...new Set(PACKAGES.filter((pkg) => pkg.catalog === "viu").map((pkg) => pkg.group))];
+  const groups = [...new Set(PACKAGES.filter((pkg) => pkg.catalog === catalog).map((pkg) => pkg.group))];
   root.innerHTML = groups.map((group) => `
     <section class="catalog-group">
       <h3 class="group-title"><span>${group}</span></h3>
       <div class="catalog-groups">
         ${PACKAGES.map((pkg, index) => ({ pkg, index }))
-          .filter(({ pkg }) => pkg.catalog === "viu" && pkg.group === group)
+          .filter(({ pkg }) => pkg.catalog === catalog && pkg.group === group)
           .map(({ pkg, index }) => cardHtml(pkg, index, "card-alt"))
           .join("")}
       </div>
