@@ -69,6 +69,7 @@
             <button class="admin-nav-item" type="button" data-admin-section="adminReviews">Ulasan</button>
             <button class="admin-nav-item" type="button" data-admin-section="adminTestimoni">Testimoni</button>
             <button class="admin-nav-item" type="button" data-admin-section="adminLangganan">Langganan</button>
+            <button class="admin-nav-item" type="button" data-admin-section="adminKatalog">Katalog</button>
             <button class="admin-nav-item" type="button" data-admin-section="adminKeuangan">Catatan keuangan Harian</button>
             <button class="admin-nav-item" type="button" data-admin-section="adminTelegram">Telegram</button>
             <a class="admin-nav-item" href="index.html#ulasan">Lihat website</a>
@@ -121,6 +122,127 @@
           <button class="btn btn-outline btn-sm" data-filter="dihentikan">Dihentikan</button>
         </div>
         <div class="langganan-list" id="langgananList"><p class="review-empty">Memuat langganan…</p></div>
+      </section>
+
+      <section class="admin-card admin-katalog admin-section" id="adminKatalog" hidden>
+        <div class="admin-title"><div><p class="section-eyebrow">MASTER DATA</p><h2>Katalog &amp; paket</h2></div><div class="admin-actions">
+          <button class="btn btn-outline btn-sm" id="refreshKatalog" type="button">Muat ulang</button>
+          <button class="btn btn-outline btn-sm" id="seedKatalog" type="button">Seed dari data bawaan</button>
+        </div></div>
+        <p class="admin-help">Klik <strong>+ Tambah katalog</strong> untuk layanan baru, atau <strong>+ Tambah paket</strong> untuk durasi &amp; harganya. Form tampil di popup, tidak menggeser daftar. Harga diisi dalam <strong>ribuan Rupiah</strong> (misal <code>25</code> = Rp 25.000).</p>
+        <p class="review-status" id="katalogStatus" role="status"></p>
+
+        <div class="admin-title admin-subtitle-row">
+          <h3 class="admin-subtitle">Master katalog</h3>
+          <button class="btn btn-primary btn-sm" id="addCatalog" type="button">+ Tambah katalog</button>
+        </div>
+        <div class="admin-catalog-list" id="adminCatalogList"><p class="review-empty">Memuat katalog…</p></div>
+
+        <div class="admin-title admin-subtitle-row">
+          <h3 class="admin-subtitle">Paket</h3>
+          <button class="btn btn-primary btn-sm" id="addPackage" type="button">+ Tambah paket</button>
+        </div>
+        <div class="admin-catalog-list" id="adminPackageList"><p class="review-empty">Memuat paket…</p></div>
+
+        <!-- Popup form master katalog -->
+        <div class="admin-modal" id="catalogModal" hidden>
+          <div class="admin-modal-overlay" data-admin-modal-close="catalog"></div>
+          <div class="admin-modal-box" role="dialog" aria-modal="true" aria-labelledby="catalogModalTitle">
+            <button class="admin-modal-close" type="button" data-admin-modal-close="catalog" aria-label="Tutup form">&times;</button>
+            <p class="section-eyebrow">MASTER KATALOG</p>
+            <h3 class="admin-modal-title" id="catalogModalTitle">Tambah katalog</h3>
+            <form id="catalogForm" class="admin-form">
+              <input type="hidden" id="catId">
+              <label class="review-field">Nama
+                <input id="catName" type="text" maxlength="60" required placeholder="Contoh: Disney+">
+              </label>
+              <label class="review-field">Key (slug)
+                <input id="catKey" type="text" maxlength="30" required placeholder="Contoh: disney">
+              </label>
+              <label class="review-field">Subtitle
+                <input id="catSubtitle" type="text" maxlength="60" placeholder="Contoh: Sharing 6 user">
+              </label>
+              <label class="review-field">Deskripsi
+                <input id="catDescription" type="text" maxlength="160" placeholder="Kalimat singkat di bawah judul katalog">
+              </label>
+              <label class="review-field">Ikon
+                <select id="catIcon">
+                  <option value="fi-br-film">Film</option>
+                  <option value="fi-br-play">Play</option>
+                  <option value="fi-br-users">Users</option>
+                  <option value="fi-br-laptop">Laptop</option>
+                  <option value="fi-br-devices">Devices</option>
+                </select>
+              </label>
+              <label class="review-field">Halaman
+                <select id="catPage">
+                  <option value="paket-lain">Paket lain</option>
+                  <option value="index">Beranda (Netflix)</option>
+                </select>
+              </label>
+              <label class="review-field">Urutan
+                <input id="catOrder" type="number" min="0" step="1" value="99">
+              </label>
+              <label class="review-field checkbox-field"><input id="catActive" type="checkbox" checked> Aktif</label>
+              <div class="admin-form-actions">
+                <button class="btn btn-primary btn-sm" type="submit" id="catSubmit">Simpan katalog</button>
+                <button class="btn btn-outline btn-sm" type="button" data-admin-modal-close="catalog">Batal</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Popup form paket -->
+        <div class="admin-modal" id="packageModal" hidden>
+          <div class="admin-modal-overlay" data-admin-modal-close="package"></div>
+          <div class="admin-modal-box" role="dialog" aria-modal="true" aria-labelledby="packageModalTitle">
+            <button class="admin-modal-close" type="button" data-admin-modal-close="package" aria-label="Tutup form">&times;</button>
+            <p class="section-eyebrow">PAKET</p>
+            <h3 class="admin-modal-title" id="packageModalTitle">Tambah paket</h3>
+            <form id="packageForm" class="admin-form">
+              <input type="hidden" id="pkgId">
+              <label class="review-field">Katalog
+                <select id="pkgCatalog" required></select>
+              </label>
+              <label class="review-field">Grup / kategori
+                <input id="pkgGroup" type="text" maxlength="60" placeholder="Contoh: DISNEY+ SHARING 6 USER">
+              </label>
+              <label class="review-field">Layanan
+                <input id="pkgService" type="text" maxlength="60" required placeholder="Contoh: Disney+">
+              </label>
+              <label class="review-field">Durasi
+                <input id="pkgDuration" type="text" maxlength="40" required placeholder="Contoh: 1 Bulan">
+              </label>
+              <label class="review-field">Device / user
+                <input id="pkgDevice" type="text" maxlength="60" placeholder="Contoh: 6 user sharing">
+              </label>
+              <label class="review-field">Harga (ribuan Rp)
+                <input id="pkgPrice" type="number" min="0" step="1" required placeholder="Contoh: 25">
+              </label>
+              <label class="review-field">Satuan
+                <input id="pkgPer" type="text" maxlength="30" placeholder="Contoh: / bulan">
+              </label>
+              <label class="review-field">Ikon
+                <select id="pkgIcon">
+                  <option value="fi-br-film">Film</option>
+                  <option value="fi-br-play">Play</option>
+                  <option value="fi-br-users">Users</option>
+                  <option value="fi-br-laptop">Laptop</option>
+                  <option value="fi-br-devices">Devices</option>
+                </select>
+              </label>
+              <label class="review-field">Urutan
+                <input id="pkgOrder" type="number" min="0" step="1" value="99">
+              </label>
+              <label class="review-field checkbox-field"><input id="pkgFeatured" type="checkbox"> Tandai terlaris</label>
+              <label class="review-field checkbox-field"><input id="pkgActive" type="checkbox" checked> Aktif</label>
+              <div class="admin-form-actions">
+                <button class="btn btn-primary btn-sm" type="submit" id="pkgSubmit">Simpan paket</button>
+                <button class="btn btn-outline btn-sm" type="button" data-admin-modal-close="package">Batal</button>
+              </div>
+            </form>
+          </div>
+        </div>
       </section>
 
       <section class="admin-card admin-keuangan admin-section" id="adminKeuangan" hidden>

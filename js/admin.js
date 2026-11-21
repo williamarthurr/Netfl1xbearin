@@ -1,5 +1,6 @@
 import { firebaseConfig, adminEmails, notifyWorkerUrl } from "./firebase-config.js";
 import { initThemeToggle } from "./theme.js";
+import { SEED_CATALOGS, SEED_PACKAGES, formatPrice, trapFocus } from "./catalog.js";
 
 let db;
 let auth;
@@ -73,6 +74,7 @@ async function initFirebase() {
       loadReviews();
       loadTestimonials();
       initLangganan();
+      initKatalog();
       initKeuangan();
     });
   } catch (error) { console.error(error); setLoginStatus("Dashboard gagal dimuat. Periksa koneksi Firebase.", true); }
@@ -695,6 +697,287 @@ $("#copySecretButton").addEventListener("click", async () => {
     setTelegramNote("Sync secret disalin ke clipboard.");
   } catch (error) {
     setTelegramNote("Gagal menyalin — salin manual dari kotak di atas.", true);
+  }
+});
+
+// ---------- Master katalog & paket ----------
+
+let katalogCache = { catalogs: [], packages: [] };
+
+function byOrder(a, b) {
+  return (Number(a.order) || 0) - (Number(b.order) || 0)
+    || String(a.name || a.service || "").localeCompare(String(b.name || b.service || ""));
+}
+
+function setKatalogStatus(message, isError = false) {
+  const status = $("#katalogStatus");
+  status.textContent = message;
+  status.className = `review-status ${isError ? "error" : ""}`;
+}
+
+let adminModalReturnFocus = null;
+
+function openAdminModal(modalId, titleId, title, focusId) {
+  const modal = document.getElementById(modalId);
+  if (!modal) return;
+  adminModalReturnFocus = document.activeElement;
+  document.getElementById(titleId).textContent = title;
+  modal.hidden = false;
+  document.body.style.overflow = "hidden";
+  document.getElementById(focusId)?.focus();
+}
+
+function closeAdminModal(modal) {
+  if (!modal) return;
+  modal.hidden = true;
+  document.body.style.overflow = "";
+  adminModalReturnFocus?.focus?.({ preventScroll: true });
+  adminModalReturnFocus = null;
+}
+
+function resetCatalogForm() {
+  $("#catalogForm").reset();
+  $("#catId").value = "";
+  $("#catOrder").value = "99";
+  $("#catActive").checked = true;
+  $("#catSubmit").textContent = "Simpan katalog";
+}
+
+function resetPackageForm() {
+  $("#packageForm").reset();
+  $("#pkgId").value = "";
+  $("#pkgOrder").value = "99";
+  $("#pkgActive").checked = true;
+  $("#pkgFeatured").checked = false;
+  $("#pkgSubmit").textContent = "Simpan paket";
+}
+
+function fillCatalogSelect(catalogs) {
+  const select = $("#pkgCatalog");
+  const current = select.value;
+  select.innerHTML = catalogs.map((catalog) =>
+    `<option value="${escapeHtml(catalog.key)}">${escapeHtml(catalog.name)}</option>`).join("");
+  if (current && [...select.options].some((option) => option.value === current)) select.value = current;
+}
+
+function renderKatalogRows() {
+  const { catalogs, packages } = katalogCache;
+  const catalogById = new Map(catalogs.map((catalog) => [catalog.id, catalog]));
+
+  $("#adminCatalogList").innerHTML = catalogs.length
+    ? catalogs.map((catalog) => `<article class="admin-catalog-row">
+        <div class="row-main"><strong>${escapeHtml(catalog.name)}</strong>
+          <span class="row-meta">key: ${escapeHtml(catalog.key)} · ${escapeHtml(catalog.page || "paket-lain")} · urutan ${Number(catalog.order) || 0} · ${catalog.active === false ? "nonaktif" : "aktif"}</span>
+        </div>
+        <div class="admin-actions">
+          <button class="btn btn-outline btn-sm" type="button" data-cat-edit="${escapeHtml(catalog.id)}">Edit</button>
+          <button class="btn btn-danger btn-sm" type="button" data-cat-delete="${escapeHtml(catalog.id)}">Hapus</button>
+        </div>
+      </article>`).join("")
+    : '<p class="review-empty">Belum ada katalog. Tambah baru atau klik Seed dari data bawaan.</p>';
+
+  $("#adminPackageList").innerHTML = packages.length
+    ? packages.map((pkg) => `<article class="admin-catalog-row">
+        <div class="row-main"><strong>${escapeHtml(pkg.service || "-")} · ${escapeHtml(pkg.duration || "-")}</strong>
+          <span class="row-meta">${escapeHtml(catalogById.get(pkg.catalog)?.name || pkg.catalog || "-")} · ${escapeHtml(pkg.group || "-")} · Rp ${formatPrice(pkg.price)} · ${escapeHtml(pkg.device || "-")} · ${pkg.active === false ? "nonaktif" : "aktif"}</span>
+        </div>
+        <div class="admin-actions">
+          <button class="btn btn-outline btn-sm" type="button" data-pkg-edit="${escapeHtml(pkg.id)}">Edit</button>
+          <button class="btn btn-danger btn-sm" type="button" data-pkg-delete="${escapeHtml(pkg.id)}">Hapus</button>
+        </div>
+      </article>`).join("")
+    : '<p class="review-empty">Belum ada paket.</p>';
+}
+
+async function loadKatalog() {
+  if (!db || !api) { setKatalogStatus("Firebase belum terhubung.", true); return; }
+  try {
+    const [catalogSnapshot, packageSnapshot] = await Promise.all([
+      api.getDocs(api.collection(db, "catalogs")),
+      api.getDocs(api.collection(db, "packages")),
+    ]);
+    katalogCache = {
+      catalogs: catalogSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })).sort(byOrder),
+      packages: packageSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })).sort(byOrder),
+    };
+    fillCatalogSelect(katalogCache.catalogs);
+    renderKatalogRows();
+  } catch (error) {
+    console.error(error);
+    setKatalogStatus("Katalog gagal dimuat. Periksa Rules Firestore untuk koleksi catalogs & packages.", true);
+  }
+}
+
+function initKatalog() {
+  loadKatalog();
+}
+
+$("#refreshKatalog").addEventListener("click", loadKatalog);
+
+$("#catalogForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!db || !api) { setKatalogStatus("Firebase belum terhubung.", true); return; }
+  const id = $("#catId").value;
+  const data = {
+    key: $("#catKey").value.trim().toLowerCase().replace(/[^a-z0-9-]+/g, "-"),
+    name: $("#catName").value.trim(),
+    subtitle: $("#catSubtitle").value.trim(),
+    description: $("#catDescription").value.trim(),
+    icon: $("#catIcon").value,
+    page: $("#catPage").value,
+    order: Number($("#catOrder").value) || 0,
+    active: $("#catActive").checked,
+  };
+  if (!data.key || !data.name) { setKatalogStatus("Nama dan key wajib diisi.", true); return; }
+  if (katalogCache.catalogs.some((catalog) => catalog.key === data.key && catalog.id !== id)) {
+    setKatalogStatus("Key sudah dipakai katalog lain.", true);
+    return;
+  }
+  try {
+    if (id) await api.updateDoc(api.doc(db, "catalogs", id), data);
+    else await api.addDoc(api.collection(db, "catalogs"), data);
+    resetCatalogForm();
+    closeAdminModal($("#catalogModal"));
+    setKatalogStatus(id ? "Katalog diperbarui." : "Katalog ditambahkan.");
+    loadKatalog();
+  } catch (error) {
+    console.error(error);
+    setKatalogStatus(`Gagal menyimpan katalog (${error.code || "kesalahan koneksi"}).`, true);
+  }
+});
+
+$("#packageForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!db || !api) { setKatalogStatus("Firebase belum terhubung.", true); return; }
+  const id = $("#pkgId").value;
+  const data = {
+    catalog: $("#pkgCatalog").value,
+    group: $("#pkgGroup").value.trim(),
+    service: $("#pkgService").value.trim(),
+    duration: $("#pkgDuration").value.trim(),
+    device: $("#pkgDevice").value.trim(),
+    price: Number($("#pkgPrice").value),
+    per: $("#pkgPer").value.trim(),
+    icon: $("#pkgIcon").value,
+    featured: $("#pkgFeatured").checked,
+    order: Number($("#pkgOrder").value) || 0,
+    active: $("#pkgActive").checked,
+  };
+  if (!data.catalog || !data.service || !data.duration) {
+    setKatalogStatus("Katalog, layanan, dan durasi wajib diisi.", true);
+    return;
+  }
+  try {
+    if (id) await api.updateDoc(api.doc(db, "packages", id), data);
+    else await api.addDoc(api.collection(db, "packages"), data);
+    resetPackageForm();
+    closeAdminModal($("#packageModal"));
+    setKatalogStatus(id ? "Paket diperbarui." : "Paket ditambahkan.");
+    loadKatalog();
+  } catch (error) {
+    console.error(error);
+    setKatalogStatus(`Gagal menyimpan paket (${error.code || "kesalahan koneksi"}).`, true);
+  }
+});
+
+$("#addCatalog").addEventListener("click", () => {
+  resetCatalogForm();
+  openAdminModal("catalogModal", "catalogModalTitle", "Tambah katalog", "catName");
+});
+
+$("#addPackage").addEventListener("click", () => {
+  resetPackageForm();
+  openAdminModal("packageModal", "packageModalTitle", "Tambah paket", "pkgService");
+});
+
+document.querySelectorAll("[data-admin-modal-close]").forEach((el) => {
+  el.addEventListener("click", () => closeAdminModal(el.closest(".admin-modal")));
+});
+
+document.addEventListener("keydown", (e) => {
+  const modal = document.querySelector(".admin-modal:not([hidden])");
+  if (!modal) return;
+  if (e.key === "Escape") closeAdminModal(modal);
+  if (e.key === "Tab") trapFocus(modal.querySelector(".admin-modal-box"), e);
+});
+
+$("#adminCatalogList").addEventListener("click", async (event) => {
+  const edit = event.target.closest("[data-cat-edit]");
+  const remove = event.target.closest("[data-cat-delete]");
+  if (edit) {
+    const catalog = katalogCache.catalogs.find((item) => item.id === edit.dataset.catEdit);
+    if (!catalog) return;
+    $("#catId").value = catalog.id;
+    $("#catName").value = catalog.name || "";
+    $("#catKey").value = catalog.key || "";
+    $("#catSubtitle").value = catalog.subtitle || "";
+    $("#catDescription").value = catalog.description || "";
+    $("#catIcon").value = catalog.icon || "fi-br-film";
+    $("#catPage").value = catalog.page || "paket-lain";
+    $("#catOrder").value = Number(catalog.order) || 0;
+    $("#catActive").checked = catalog.active !== false;
+    $("#catSubmit").textContent = "Simpan perubahan";
+    openAdminModal("catalogModal", "catalogModalTitle", "Edit katalog", "catName");
+  }
+  if (remove && confirm("Hapus katalog ini? Paket di dalamnya tidak ikut terhapus.")) {
+    try {
+      await api.deleteDoc(api.doc(db, "catalogs", remove.dataset.catDelete));
+      setKatalogStatus("Katalog dihapus.");
+      loadKatalog();
+    } catch (error) { setKatalogStatus("Gagal menghapus katalog.", true); }
+  }
+});
+
+$("#adminPackageList").addEventListener("click", async (event) => {
+  const edit = event.target.closest("[data-pkg-edit]");
+  const remove = event.target.closest("[data-pkg-delete]");
+  if (edit) {
+    const pkg = katalogCache.packages.find((item) => item.id === edit.dataset.pkgEdit);
+    if (!pkg) return;
+    $("#pkgId").value = pkg.id;
+    $("#pkgCatalog").value = pkg.catalog || "";
+    $("#pkgGroup").value = pkg.group || "";
+    $("#pkgService").value = pkg.service || "";
+    $("#pkgDuration").value = pkg.duration || "";
+    $("#pkgDevice").value = pkg.device || "";
+    $("#pkgPrice").value = Number(pkg.price) || 0;
+    $("#pkgPer").value = pkg.per || "";
+    $("#pkgIcon").value = pkg.icon || "fi-br-film";
+    $("#pkgFeatured").checked = Boolean(pkg.featured);
+    $("#pkgOrder").value = Number(pkg.order) || 0;
+    $("#pkgActive").checked = pkg.active !== false;
+    $("#pkgSubmit").textContent = "Simpan perubahan";
+    openAdminModal("packageModal", "packageModalTitle", "Edit paket", "pkgService");
+  }
+  if (remove && confirm("Hapus paket ini?")) {
+    try {
+      await api.deleteDoc(api.doc(db, "packages", remove.dataset.pkgDelete));
+      setKatalogStatus("Paket dihapus.");
+      loadKatalog();
+    } catch (error) { setKatalogStatus("Gagal menghapus paket.", true); }
+  }
+});
+
+$("#seedKatalog").addEventListener("click", async () => {
+  if (!db || !api) { setKatalogStatus("Firebase belum terhubung.", true); return; }
+  const missingCatalogs = katalogCache.catalogs.length === 0;
+  const missingPackages = katalogCache.packages.length === 0;
+  if (!missingCatalogs && !missingPackages) {
+    setKatalogStatus("Katalog & paket sudah ada. Seed dilewati.", true);
+    return;
+  }
+  const parts = [missingCatalogs && "katalog", missingPackages && "paket"].filter(Boolean);
+  if (!confirm(`Isi ${parts.join(" & ")} dari data bawaan sekarang?`)) return;
+  try {
+    const jobs = [];
+    if (missingCatalogs) jobs.push(...SEED_CATALOGS.map((item) => api.addDoc(api.collection(db, "catalogs"), item)));
+    if (missingPackages) jobs.push(...SEED_PACKAGES.map((item) => api.addDoc(api.collection(db, "packages"), item)));
+    await Promise.all(jobs);
+    setKatalogStatus(`Seed berhasil: ${parts.join(" & ")} sudah masuk Firestore.`);
+    loadKatalog();
+  } catch (error) {
+    console.error(error);
+    setKatalogStatus(`Seed gagal (${error.code || "kesalahan koneksi"}).`, true);
   }
 });
 
