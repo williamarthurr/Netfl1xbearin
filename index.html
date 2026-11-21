@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Mulai ambil katalog dari Firestore sedini mungkin, sebelum modul & CSS dimuat. -->
+  <link rel="preconnect" href="https://firestore.googleapis.com" />
+  <script src="js/catalog-preload.js"></script>
   <title>Netfl1x micicow — Premium Sharing</title>
   <meta name="description" content="Netfl1x Premium Sharing — harga murah, garansi. Cuma 1 profile 1 user. Order cepat via WhatsApp." />
   <meta name="theme-color" content="#0b0b0f" />
@@ -90,35 +93,15 @@
         Netfl1x Premium Sharing dengan sistem <strong>1 profile = 1 user</strong>.
         Pribadi, aman, dan bebas iklan. Pilih durasi, langsung nonton.
       </p>
-      <!-- Tombol Lihat Katalog = pintu memilih katalog -->
+      <!-- Tombol Lihat Katalog = membuka popup pilihan katalog -->
       <div class="catalog-finder">
         <div class="hero-actions">
-          <button class="btn btn-primary btn-lg" id="catalogMenuBtn" type="button" aria-expanded="false" aria-controls="catalogMenu">
+          <button class="btn btn-primary btn-lg" id="catalogMenuBtn" type="button" aria-haspopup="dialog" aria-controls="catalogModal">
             Lihat Katalog <span aria-hidden="true">▾</span>
           </button>
           <a href="#" class="btn btn-outline btn-lg js-order">Order Sekarang</a>
         </div>
         <p class="finder-hint"><span aria-hidden="true">♥</span> Cari paket aplikasi lainnya? Klik katalog ya!</p>
-        <div class="finder-panel" id="catalogMenu" hidden>
-          <p class="finder-label">Pilih katalog</p>
-          <div class="finder-options">
-            <a href="#katalog" class="finder-option" data-finder-link>
-              <span class="finder-option-icon" aria-hidden="true"><i class="fi fi-br-film"></i></span>
-              <span class="finder-option-text"><strong>Netflix</strong><small>Premium Sharing</small></span>
-              <span class="finder-option-arrow" aria-hidden="true">→</span>
-            </a>
-            <a href="paket-lain.html#katalog-viu" class="finder-option" data-finder-link>
-              <span class="finder-option-icon" aria-hidden="true"><i class="fi fi-br-play"></i></span>
-              <span class="finder-option-text"><strong>Viu &amp; Video</strong><small>Paket sharing lainnya</small></span>
-              <span class="finder-option-arrow" aria-hidden="true">→</span>
-            </a>
-            <a href="paket-lain.html#katalog-disney" class="finder-option" data-finder-link>
-              <span class="finder-option-icon" aria-hidden="true"><i class="fi fi-br-film"></i></span>
-              <span class="finder-option-text"><strong>Disney+</strong><small>Sharing 6 user</small></span>
-              <span class="finder-option-arrow" aria-hidden="true">→</span>
-            </a>
-          </div>
-        </div>
       </div>
 
       <div class="hero-stats">
@@ -437,6 +420,19 @@
       </div>
     </div>
   </footer>
+
+  <!-- Popup pilih katalog -->
+  <div class="catalog-modal" id="catalogModal" hidden>
+    <div class="catalog-modal-overlay" data-catalog-modal-close></div>
+    <div class="catalog-modal-box" role="dialog" aria-modal="true" aria-labelledby="catalogModalTitle">
+      <button class="catalog-modal-close" type="button" data-catalog-modal-close aria-label="Tutup pilihan katalog">&times;</button>
+      <p class="section-eyebrow">PILIH KATALOG</p>
+      <h3 class="catalog-modal-title" id="catalogModalTitle">Mau nonton apa hari ini?</h3>
+      <div class="finder-options" id="catalogMenuOptions">
+        <!-- Diisi JS dari master katalog -->
+      </div>
+    </div>
+  </div>
 
   <!-- Modal form order katalog -->
   <div class="order-modal" id="orderModal" hidden>

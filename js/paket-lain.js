@@ -1,5 +1,7 @@
 import { initThemeToggle } from "./theme.js";
-import { renderAltCatalog, initOrderModal } from "./catalog.js";
+import { initOrderModal, fetchCatalogFromRest, renderAltCatalogs } from "./catalog.js";
+
+const catalogLoad = fetchCatalogFromRest();
 
 function initNavbar() {
   const navbar = document.getElementById("navbar");
@@ -26,8 +28,11 @@ document.addEventListener("DOMContentLoaded", () => {
   initThemeToggle();
   initNavbar();
   initMobileNav();
-  renderAltCatalog("viu", "viuGroups");
-  renderAltCatalog("disney", "disneyGroups");
+  renderAltCatalogs(); // data bawaan dulu, diganti data Firestore kalau tersedia
   initOrderModal();
   document.getElementById("year").textContent = new Date().getFullYear();
+
+  catalogLoad
+    .then(renderAltCatalogs)
+    .catch((error) => console.error("Data katalog gagal dimuat:", error));
 });

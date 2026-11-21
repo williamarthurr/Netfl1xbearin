@@ -1,36 +1,34 @@
 import { initThemeToggle } from "./theme.js";
 import {
-  WA_NUMBER, PACKAGES, trapFocus, initOrderModal, cardHtml,
-  carouselSync, initCarousel,
+  WA_NUMBER, trapFocus, initOrderModal, cardHtml, carouselSync, initCarousel,
+  fetchCatalogFromRest, initPublicFirestore, getPackages, renderFinderOptions as renderFinderOptionsNow,
 } from "./catalog.js";
+
+// Fetch dimulai sejak modul dimuat (lebih awal dari DOMContentLoaded) agar data sudah ada saat diklik.
+const catalogLoad = fetchCatalogFromRest();
+
+function renderFinderOptions() {
+  renderFinderOptionsNow();
+}
 
 let db = null;
 let firestoreApi = null;
 
 async function initFirebase() {
-  try {
-    // Firebase dimuat terpisah agar kegagalan koneksi CDN tidak menghentikan katalog.
-    const [appModule, firestoreModule, configModule] = await Promise.all([
-      import("https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js"),
-      import("https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js"),
-      import("./firebase-config.js")
-    ]);
-    const { firebaseConfig } = configModule;
-    if (!firebaseConfig.projectId || firebaseConfig.projectId.startsWith("PASTE_")) return;
-    firestoreApi = firestoreModule;
-    db = firestoreApi.getFirestore(appModule.initializeApp(firebaseConfig));
-    await loadReviews();
-    loadTestimonialPhotos();
-  } catch (error) {
-    console.error("Firebase gagal dimuat:", error);
+  // Firebase dimuat terpisah agar kegagalan koneksi CDN tidak menghentikan katalog.
+  const connection = await initPublicFirestore();
+  if (connection) {
+    firestoreApi = connection.api;
+    db = connection.db;
   }
+  return connection;
 }
 
 function renderCatalog() {
   const grid = document.getElementById("catalogGrid");
-  grid.innerHTML = PACKAGES.map((pkg, index) => ({ pkg, index }))
-    .filter(({ pkg }) => pkg.catalog === "netflix")
-    .map(({ pkg, index }) => cardHtml(pkg, index))
+  grid.innerHTML = getPackages()
+    .filter((pkg) => pkg.catalog === "netflix")
+    .map((pkg) => cardHtml(pkg))
     .join("");
 }
 
@@ -95,27 +93,38 @@ function initMobileNav() {
   });
 }
 
-// Tombol "Lihat Katalog" membuka pilihan katalog
+// Tombol "Lihat Katalog" membuka popup pilihan katalog
 function initFinder() {
   const toggle = document.getElementById("catalogMenuBtn");
-  const panel = document.getElementById("catalogMenu");
-  if (!toggle || !panel) return;
-  const setOpen = (open) => {
-    panel.hidden = !open;
-    toggle.setAttribute("aria-expanded", String(open));
+  const modal = document.getElementById("catalogModal");
+  if (!toggle || !modal) return;
+  let lastFocused = null;
+
+  const close = () => {
+    modal.hidden = true;
+    document.body.style.overflow = "";
+    lastFocused?.focus?.({ preventScroll: true });
   };
-  toggle.addEventListener("click", () => setOpen(panel.hidden));
-  panel.querySelectorAll("[data-finder-link]").forEach((link) => {
-    link.addEventListener("click", () => setOpen(false));
+
+  const open = () => {
+    lastFocused = document.activeElement;
+    modal.hidden = false;
+    document.body.style.overflow = "hidden";
+    renderFinderOptionsNow(); // data dari cache langsung tampil, tanpa status loading
+    modal.querySelector(".catalog-modal-close")?.focus();
+  };
+
+  toggle.addEventListener("click", open);
+  modal.querySelectorAll("[data-catalog-modal-close]").forEach((el) => {
+    el.addEventListener("click", close);
+  });
+  modal.addEventListener("click", (e) => {
+    if (e.target.closest("[data-finder-link]")) close(); // link menavigasi seperti biasa
   });
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !panel.hidden) {
-      setOpen(false);
-      toggle.focus();
-    }
-  });
-  document.addEventListener("click", (e) => {
-    if (!panel.hidden && !e.target.closest(".catalog-finder")) setOpen(false);
+    if (modal.hidden) return;
+    if (e.key === "Escape") close();
+    if (e.key === "Tab") trapFocus(modal.querySelector(".catalog-modal-box"), e);
   });
 }
 
@@ -408,8 +417,8 @@ function initReviewForm() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  initFirebase();
-  renderCatalog();
+  renderCatalog(); // data bawaan dulu supaya grid tidak kosong saat Firebase masih dimuat
+  renderFinderOptions();
   initOrderModal();
   initGenericOrder();
   initFinder();
@@ -423,5 +432,17 @@ document.addEventListener("DOMContentLoaded", () => {
   initCarousels();
   initReviewForm();
   document.getElementById("reviewMore").addEventListener("click", loadMoreReviews);
-  loadReviews();
+
+  // Katalog diambil lewat REST (cepat, tanpa SDK), reviews/testimoni menyusul lewat SDK.
+  catalogLoad
+    .then(() => {
+      renderCatalog();
+      renderFinderOptions();
+    })
+    .catch((error) => console.error("Data katalog gagal dimuat:", error));
+
+  initFirebase().finally(() => {
+    loadReviews();
+    loadTestimonialPhotos();
+  });
 });
