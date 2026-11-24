@@ -1,22 +1,20 @@
-// Konfigurasi Firebase Web App.
-// API key web boleh berada di frontend; keamanan Firestore diatur oleh Security Rules.
+// Semua nilai Firebase diambil dari js/client-config.js, yang dimuat lebih dulu
+// dari <head>. Untuk klien baru cukup mengubah file config tersebut.
+const client = window.CLIENT_CONFIG || {};
+
+// API key web memang publik; keamanan ada di Firestore Security Rules.
 export const firebaseConfig = {
-  apiKey: "AIzaSyBdAPAs5qGXsCCs2YsPhouqDhrmW-nOBmQ",
-  authDomain: "netfl1xmicicow.firebaseapp.com",
-  projectId: "netfl1xmicicow",
-  storageBucket: "netfl1xmicicow.firebasestorage.app",
-  messagingSenderId: "1046532679081",
-  appId: "1:1046532679081:web:e639e5f3512c5e4f5250b8",
-  measurementId: "G-V4387P32ST"
+  apiKey: client.apiKey || "",
+  authDomain: client.projectId ? `${client.projectId}.firebaseapp.com` : "",
+  projectId: client.projectId || "",
+  storageBucket: client.projectId ? `${client.projectId}.firebasestorage.app` : "",
+  messagingSenderId: client.messagingSenderId || "",
+  appId: client.appId || "",
+  measurementId: client.measurementId || "",
 };
 
-// Masukkan semua email Google yang boleh memakai dashboard admin.
-export const adminEmails = [
-  "ocravf@gmail.com",
-  "itspjmgf@gmail.com",
-  "arinjualan1@gmail.com"
-];
+// Daftar ini hanya untuk UX dashboard; akses sebenarnya ada di aturan Firestore.
+export const adminEmails = Array.isArray(client.adminEmails) ? client.adminEmails : [];
 
-// URL worker notifikasi langganan (diisi setelah `npx wrangler deploy` di folder worker/).
-// Kosong = modul Telegram hanya menampilkan "Worker belum dihubungkan", modul langganan tetap jalan.
-export const notifyWorkerUrl = "https://netflixarin-notify.ravgg2530.workers.dev";
+// Kosong = modul Telegram menampilkan "worker belum dihubungkan".
+export const notifyWorkerUrl = client.workerUrl || "";
