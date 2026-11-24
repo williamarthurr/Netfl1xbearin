@@ -154,8 +154,7 @@ function initLightbox() {
     if (!card) return;
     lastFocused = card;
     card.setAttribute("tabindex", "-1");
-    const cardImg = card.querySelector("img");
-    img.src = (cardImg?.dataset?.upgraded ? cardImg.currentSrc : null) || card.dataset.src;
+    img.src = card.dataset.src;
     lightbox.classList.add("open");
     lightbox.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
@@ -196,34 +195,6 @@ function watchLazyImage(img) {
 
 function initLazyImages() {
   document.querySelectorAll(".testimoni-card img").forEach(watchLazyImage);
-}
-
-// Foto statis memakai placeholder inline (langsung tampil tanpa jaringan), lalu
-// ditukar ke file WebP penuh begitu kartunya hampir terlihat.
-function upgradeTestimonialImage(img) {
-  const full = img.dataset.full;
-  if (!full || img.dataset.upgraded) return;
-  img.dataset.upgraded = "1";
-  const loader = new Image();
-  loader.onload = () => { img.src = full; };
-  loader.src = full;
-}
-
-function initTestimonialImageUpgrade() {
-  const images = document.querySelectorAll(".testimoni-card img[data-full]");
-  if (!images.length) return;
-  if (!("IntersectionObserver" in window)) {
-    images.forEach(upgradeTestimonialImage);
-    return;
-  }
-  const observer = new IntersectionObserver((entries) => {
-    for (const entry of entries) {
-      if (!entry.isIntersecting) continue;
-      observer.unobserve(entry.target);
-      upgradeTestimonialImage(entry.target);
-    }
-  }, { rootMargin: "300px 0px" });
-  images.forEach((img) => observer.observe(img));
 }
 
 // Foto testimoni hasil upload admin (data URL di Firestore) ditambahkan setelah
@@ -519,7 +490,6 @@ document.addEventListener("DOMContentLoaded", () => {
   initYear();
   initLightbox();
   initLazyImages();
-  initTestimonialImageUpgrade();
   initCarousels();
   initReviewForm();
   document.getElementById("reviewMore").addEventListener("click", loadMoreReviews);
