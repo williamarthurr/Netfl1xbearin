@@ -1,6 +1,7 @@
 // Data paket & komponen katalog yang dipakai halaman utama (Netflix) dan halaman paket lain.
 // Data di Firestore (catalogs + packages) adalah sumber utama; array bawaan di bawah
 // dipakai sebagai fallback saat Firebase gagal dan sebagai sumber tombol Seed di admin.
+import { escapeHtml } from "./html.js";
 
 // Nomor WhatsApp reseller, format internasional tanpa +
 export const WA_NUMBER = "6287782164717";
@@ -54,12 +55,6 @@ function saveCachedData() {
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify({ catalogs: state.catalogs, packages: state.packages }));
   } catch { /* localStorage tidak tersedia atau penuh: abaikan */ }
-}
-
-function escapeHtml(value) {
-  return String(value ?? "").replace(/[&<>"']/g, (char) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  })[char]);
 }
 
 function byOrder(a, b) {
@@ -155,6 +150,16 @@ function parseFields(fields) {
   return Object.fromEntries(Object.entries(fields).map(([key, value]) => [key, parseFirestoreValue(value)]));
 }
 
+// Baris mentah dari documents:runQuery (dipakai baik oleh restQuery maupun preload).
+function parseQueryRows(rows) {
+  return (Array.isArray(rows) ? rows : [])
+    .filter((row) => row && row.document)
+    .map((row) => ({
+      id: row.document.name.split("/").pop(),
+      ...parseFields(row.document.fields || {}),
+    }));
+}
+
 async function restQuery(projectId, apiKey, collectionId) {
   const response = await fetch(
     `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/databases/(default)/documents:runQuery?key=${encodeURIComponent(apiKey)}`,
@@ -176,21 +181,26 @@ async function restQuery(projectId, apiKey, collectionId) {
     }
   );
   if (!response.ok) throw new Error(`Firestore REST ${collectionId}: ${response.status}`);
-  const rows = await response.json();
-  return rows.filter((row) => row.document).map((row) => ({
-    id: row.document.name.split("/").pop(),
-    ...parseFields(row.document.fields || {}),
-  }));
+  return parseQueryRows(await response.json());
 }
 
 export async function fetchCatalogFromRest() {
   try {
-    // Request sudah dimulai dari <head> (catalog-preload.js), jadi tinggal tunggu hasilnya.
+    const { firebaseConfig } = await import("./firebase-config.js");
+    const { projectId, apiKey } = firebaseConfig;
+
+    // Request sudah dimulai dari <head> (catalog-preload.js), tinggal tunggu hasilnya.
+    // Preload menyimpan baris mentah; parsingnya tetap di sini supaya tidak dobel.
     const prefetched = typeof window !== "undefined" ? window.__catalogPrefetch : null;
-    let data = prefetched ? await prefetched : null;
+    const prefetch = prefetched ? await prefetched : null;
+    let data = null;
+    if (prefetch && prefetch.projectId === projectId) {
+      data = {
+        catalogs: parseQueryRows(prefetch.catalogs),
+        packages: parseQueryRows(prefetch.packages),
+      };
+    }
     if (!data) {
-      const { firebaseConfig } = await import("./firebase-config.js");
-      const { projectId, apiKey } = firebaseConfig;
       if (!projectId || projectId.startsWith("PASTE_")) {
         applyCatalogData(null, null);
         return state;

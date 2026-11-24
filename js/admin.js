@@ -1,6 +1,8 @@
 import { firebaseConfig, adminEmails, notifyWorkerUrl } from "./firebase-config.js";
 import { initThemeToggle } from "./theme.js";
 import { SEED_CATALOGS, SEED_PACKAGES, formatPrice, trapFocus } from "./catalog.js";
+import { escapeHtml } from "./html.js";
+import { DAY_MS, addDays, renewExpiry, resumeExpiry, shiftDate, todayLocal } from "./dates.js";
 
 let db;
 let auth;
@@ -9,12 +11,6 @@ let api;
 const $ = (selector) => document.querySelector(selector);
 const configured = () => firebaseConfig.projectId && !firebaseConfig.projectId.startsWith("PASTE_") && Array.isArray(adminEmails) && adminEmails.some((email) => email && !email.startsWith("TAMBAHKAN_"));
 const isAllowedAdmin = (email) => adminEmails.some((allowedEmail) => allowedEmail.toLowerCase() === (email || "").toLowerCase());
-
-function escapeHtml(value) {
-  const node = document.createElement("span");
-  node.textContent = value || "—";
-  return node.innerHTML;
-}
 
 function formatDate(timestamp) {
   return timestamp?.toDate ? new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short" }).format(timestamp.toDate()) : "Baru saja";
@@ -95,11 +91,12 @@ function readAsImage(file) {
   });
 }
 
-// Kompres ke JPEG maks sisi 1280px agar hasil base64 tetap di bawah batas dokumen Firestore (1 MB).
-async function fileToCompressedDataUrl(file) {
-  const img = await readAsImage(file);
-  const maxSide = 1280;
-  const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+// Foto disimpan sebagai data URL di Firestore. Target maksimal 200.000 karakter
+// (≈150 KB per foto) supaya total unduhan per kunjungan tetap kecil.
+const TESTIMONI_MAX_CHARS = 200000;
+const TESTIMONI_MAX_SIDE = 1000;
+
+function drawJpeg(img, scale, quality) {
   const canvas = document.createElement("canvas");
   canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
   canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
@@ -107,12 +104,26 @@ async function fileToCompressedDataUrl(file) {
   ctx.fillStyle = "#fff";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-  let quality = 0.72;
-  let dataUrl = canvas.toDataURL("image/jpeg", quality);
-  while (dataUrl.length > 950000 && quality > 0.4) {
-    quality -= 0.15;
-    dataUrl = canvas.toDataURL("image/jpeg", quality);
+  return canvas.toDataURL("image/jpeg", quality);
+}
+
+// Turunkan kualitas dulu, lalu ukuran, sampai masuk batas. Foto yang sudah ada
+// tidak disentuh — admin menghapus & mengunggah ulang manual lewat daftar foto.
+async function fileToCompressedDataUrl(file) {
+  const img = await readAsImage(file);
+  let scale = Math.min(1, TESTIMONI_MAX_SIDE / Math.max(img.naturalWidth, img.naturalHeight));
+  let dataUrl = "";
+  for (let attempt = 0; attempt < 6; attempt++) {
+    let quality = 0.7;
+    dataUrl = drawJpeg(img, scale, quality);
+    while (dataUrl.length > TESTIMONI_MAX_CHARS && quality > 0.4) {
+      quality -= 0.1;
+      dataUrl = drawJpeg(img, scale, quality);
+    }
+    if (dataUrl.length <= TESTIMONI_MAX_CHARS) break;
+    scale *= 0.8;
   }
+  if (dataUrl.length > TESTIMONI_MAX_CHARS) throw new Error("foto tetap terlalu besar setelah dikompres");
   return dataUrl;
 }
 
@@ -123,10 +134,15 @@ async function loadTestimonials() {
     const snapshot = await api.getDocs(api.collection(db, "testimonials"));
     const photos = snapshot.docs.map((item) => ({ id: item.id, ...item.data() })).sort((a, b) => (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0));
     if (!photos.length) { target.innerHTML = '<p class="review-empty">Belum ada foto terunggah.</p>'; return; }
-    target.innerHTML = photos.map((photo) => `<div class="admin-testimoni-card">
-      <img src="${photo.src}" alt="${escapeHtml(photo.fileName || "Foto testimoni")}">
-      <button class="btn btn-danger btn-sm" data-delete-photo="${photo.id}" aria-label="Hapus foto">×</button>
-    </div>`).join("");
+    target.innerHTML = photos.map((photo) => {
+      const chars = typeof photo.src === "string" ? photo.src.length : 0;
+      const sizeLabel = `${Math.round(chars / 1024)} KB${chars > TESTIMONI_MAX_CHARS ? " · besar, hapus & unggah ulang" : ""}`;
+      return `<div class="admin-testimoni-card">
+        <img src="${photo.src}" alt="${escapeHtml(photo.fileName || "Foto testimoni")}">
+        <span class="testimoni-size">${escapeHtml(sizeLabel)}</span>
+        <button class="btn btn-danger btn-sm" data-delete-photo="${photo.id}" aria-label="Hapus foto">×</button>
+      </div>`;
+    }).join("");
   } catch (error) {
     console.error(error);
     target.innerHTML = '<p class="review-empty">Foto gagal dimuat. Periksa Rules dan akun admin.</p>';
@@ -146,15 +162,17 @@ $("#testimoniUploadForm").addEventListener("submit", async (event) => {
   button.disabled = true;
   status.className = "review-status";
   let ok = 0;
-  let failureCode = "";
+  let failures = [];
   for (const file of files) {
     try {
       status.textContent = `Mengompres & mengunggah ${ok + 1}/${files.length}…`;
       const dataUrl = await fileToCompressedDataUrl(file);
-      if (dataUrl.length > 950000) { console.error(`${file.name} terlalu besar setelah kompresi`); continue; }
       await api.addDoc(api.collection(db, "testimonials"), { src: dataUrl, fileName: file.name.slice(0, 100), createdAt: api.serverTimestamp() });
       ok++;
-    } catch (error) { console.error(error); failureCode = error?.code || "kesalahan tak terduga"; }
+    } catch (error) {
+      console.error(error);
+      failures.push(error?.code || error?.message || "kesalahan tak terduga");
+    }
   }
   button.disabled = false;
   if (ok === files.length && ok > 0) {
@@ -162,10 +180,11 @@ $("#testimoniUploadForm").addEventListener("submit", async (event) => {
     status.className = "review-status success";
     event.target.reset();
   } else if (ok > 0) {
-    status.textContent = `${ok} foto terunggah, ${files.length - ok} gagal.`;
+    status.textContent = `${ok} foto terunggah, ${failures.length} gagal (${failures[0]}).`;
     status.className = "review-status error";
   } else {
-    status.textContent = `Gagal mengunggah (${failureCode}).${failureCode === "permission-denied" ? " Pastikan Rules Firestore sudah diperbarui." : ""}`;
+    const detail = failures[0] || "kesalahan tak terduga";
+    status.textContent = `Gagal mengunggah (${detail}).${detail === "permission-denied" ? " Pastikan Rules Firestore sudah diperbarui." : ""}`;
     status.className = "review-status error";
   }
   loadTestimonials();
@@ -193,12 +212,11 @@ $("#adminReviewList").addEventListener("click", async (event) => {
 
 // ---------- Langganan pelanggan ----------
 
-const DAY_MS = 86400000;
 let subscriptions = [];
 let notifyState = {}; // map "subId:expiresAtMs" -> waktu notif terkirim (dari worker)
 let langgananFilter = "semua";
 let countdownTimer = null;
-let telegramSettings = null;
+let telegramSettingsPromise = null;
 
 function randomSecret() {
   const bytes = new Uint8Array(24);
@@ -206,17 +224,23 @@ function randomSecret() {
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-// Dokumen settings/telegram menyimpan sync secret untuk worker. Dibuat otomatis saat pertama dibuka.
-async function getTelegramSettings() {
-  if (telegramSettings) return telegramSettings;
-  const snap = await api.getDoc(api.doc(db, "settings", "telegram"));
-  if (snap.exists()) {
-    telegramSettings = snap.data();
-    return telegramSettings;
+// Dokumen settings/telegram menyimpan sync secret worker. Dibuat otomatis saat pertama dibuka.
+// Promise-nya di-cache supaya tiga pemanggil pertama tidak membuat tiga secret berbeda.
+function getTelegramSettings() {
+  if (!telegramSettingsPromise) {
+    telegramSettingsPromise = api.runTransaction(db, async (transaction) => {
+      const ref = api.doc(db, "settings", "telegram");
+      const snap = await transaction.get(ref);
+      if (snap.exists()) return snap.data();
+      const settings = { syncSecret: randomSecret(), createdAt: api.serverTimestamp() };
+      transaction.set(ref, settings);
+      return settings;
+    }).catch((error) => {
+      telegramSettingsPromise = null; // biar bisa dicoba lagi setelah gagal
+      throw error;
+    });
   }
-  telegramSettings = { syncSecret: randomSecret(), createdAt: api.serverTimestamp() };
-  await api.setDoc(api.doc(db, "settings", "telegram"), telegramSettings);
-  return telegramSettings;
+  return telegramSettingsPromise;
 }
 
 async function workerFetch(path, options = {}) {
@@ -307,7 +331,7 @@ function renderSubscriptions() {
         <span class="admin-meta">${escapeHtml(sub.packageName || "Paket custom")} · Berakhir ${formatDate(sub.expiresAt)}</span>
       </div>
       ${sub.stopped
-        ? '<div class="langganan-countdown stopped-text">Dihentikan — tidak dihitung & tidak dinotif</div>'
+        ? '<div class="langganan-countdown stopped-text">Dihentikan — hitungan dijeda & tidak dinotif</div>'
         : `<div class="langganan-countdown" data-countdown="${sub.id}">…</div>`}
       <div class="admin-actions">${pill}${notifBadge}
         ${toggleButton}
@@ -327,9 +351,11 @@ async function loadSubscriptions() {
       .sort((a, b) => (a.expiresAt?.toMillis?.() || 0) - (b.expiresAt?.toMillis?.() || 0));
     renderSubscriptions();
     startCountdown();
+    return true;
   } catch (error) {
     console.error(error);
     target.innerHTML = '<p class="review-empty">Langganan gagal dimuat. Pastikan Rules Firestore sudah berisi koleksi "subscriptions" dan "settings".</p>';
+    return false;
   }
 }
 
@@ -397,9 +423,10 @@ async function showSyncSecret() {
 }
 
 async function initLangganan() {
-  await loadSubscriptions();
+  const loaded = await loadSubscriptions();
   showSyncSecret();
-  syncToWorker();
+  if (loaded) syncToWorker();
+  else setTelegramNote("Data langganan gagal dimuat — sync ke worker dilewati.", true);
   refreshTelegramCard();
 }
 
@@ -427,15 +454,15 @@ $("#langgananForm").addEventListener("submit", async (event) => {
       packageName,
       durationDays: days,
       startedAt: api.Timestamp.fromDate(startedAt),
-      expiresAt: api.Timestamp.fromDate(new Date(startedAt.getTime() + days * DAY_MS)),
+      expiresAt: api.Timestamp.fromDate(addDays(startedAt, days)),
       createdAt: api.serverTimestamp(),
     });
     setLanggananStatus(`Langganan ${nama} ditambahkan. Hitung mundur langsung jalan.`, false);
     event.target.reset();
     $("#langgananCustomWrap").hidden = true;
     $("#paketWrap").hidden = false;
-    await loadSubscriptions();
-    await syncToWorker();
+    const loadedOk = await loadSubscriptions();
+    if (loadedOk) await syncToWorker();
   } catch (error) {
     console.error(error);
     setLanggananStatus(`Gagal menambah langganan (${error.code || "kesalahan tak terduga"}).${error.code === "permission-denied" ? " Pastikan Rules Firestore sudah diperbarui." : ""}`, true);
@@ -464,8 +491,22 @@ $("#langgananList").addEventListener("click", async (event) => {
   const resumeId = event.target.dataset.resume;
   if (!extendId && !deleteId && !stopId && !resumeId) return;
   try {
-    if (stopId) await api.updateDoc(api.doc(db, "subscriptions", stopId), { stopped: true });
-    if (resumeId) await api.updateDoc(api.doc(db, "subscriptions", resumeId), { stopped: false });
+    if (stopId) await api.updateDoc(api.doc(db, "subscriptions", stopId), { stopped: true, stoppedAt: api.Timestamp.now() });
+    if (resumeId) {
+      const sub = subscriptions.find((item) => item.id === resumeId);
+      if (!sub) return;
+      const now = Date.now();
+      const nextExpiry = resumeExpiry(
+        sub.expiresAt?.toMillis?.() || now,
+        sub.stoppedAt?.toMillis?.() || null,
+        now
+      );
+      await api.updateDoc(api.doc(db, "subscriptions", resumeId), {
+        stopped: false,
+        stoppedAt: api.deleteField(),
+        expiresAt: api.Timestamp.fromMillis(nextExpiry),
+      });
+    }
     if (extendId) {
       const sub = subscriptions.find((item) => item.id === extendId);
       if (!sub) return;
@@ -473,15 +514,17 @@ $("#langgananList").addEventListener("click", async (event) => {
       if (!input) return;
       const days = Number(input.replace(",", "."));
       if (!Number.isFinite(days) || days <= 0 || days > 3650) return alert("Durasi tidak valid.");
-      const base = sub.expiresAt?.toMillis?.() || Date.now();
+      const nextExpiry = renewExpiry(Date.now(), sub.expiresAt?.toMillis?.() || 0, days);
+      const preview = formatDate(api.Timestamp.fromMillis(nextExpiry));
+      if (!confirm(`Perpanjang ${days} hari?\nBerakhir menjadi: ${preview}`)) return;
       await api.updateDoc(api.doc(db, "subscriptions", extendId), {
-        expiresAt: api.Timestamp.fromMillis(base + days * DAY_MS),
+        expiresAt: api.Timestamp.fromMillis(nextExpiry),
         durationDays: (sub.durationDays || 0) + days,
       });
     }
     if (deleteId && confirm("Hapus langganan ini?")) await api.deleteDoc(api.doc(db, "subscriptions", deleteId));
-    await loadSubscriptions();
-    await syncToWorker();
+    const loadedOk = await loadSubscriptions();
+    if (loadedOk) await syncToWorker();
   } catch (error) { alert(`Aksi gagal: ${error.code || error.message || "coba lagi"}`); }
 });
 
@@ -489,15 +532,10 @@ $("#langgananList").addEventListener("click", async (event) => {
 
 let keuanganTransactions = [];
 let keuanganDate = "";
+let keuanganRequestId = 0;
 
 function rupiah(value) {
   return "Rp " + Number(value || 0).toLocaleString("id-ID");
-}
-
-// Tanggal lokal (bukan UTC) supaya sama dengan nilai input type="date".
-function todayLocal() {
-  const now = new Date();
-  return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 }
 
 function setKeuanganStatus(message, isError = false) {
@@ -541,17 +579,11 @@ function renderKeuangan() {
   }).join("");
 }
 
-function shiftKeuanganDate(dateStr, days) {
-  const d = new Date(`${dateStr}T00:00:00`);
-  d.setDate(d.getDate() + days);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
 // Grafik batang 7 hari terakhir: satu query rentang, agregasi di browser tanpa library chart.
 function renderKeuanganChart(docs) {
   const target = $("#keuanganChart");
   const days = [];
-  for (let i = 6; i >= 0; i--) days.push(shiftKeuanganDate(keuanganDate, -i));
+  for (let i = 6; i >= 0; i--) days.push(shiftDate(keuanganDate, -i));
   const buckets = days.map((date) => ({ date, income: 0, outcome: 0 }));
   const byDate = Object.fromEntries(buckets.map((b) => [b.date, b]));
   for (const tx of docs) {
@@ -583,20 +615,23 @@ function renderKeuanganChart(docs) {
 
 async function loadKeuangan() {
   const target = $("#keuanganList");
+  const requestId = ++keuanganRequestId;
   target.innerHTML = '<p class="review-empty">Memuat transaksi…</p>';
   try {
     const days = [];
-    for (let i = 6; i >= 0; i--) days.push(shiftKeuanganDate(keuanganDate, -i));
+    for (let i = 6; i >= 0; i--) days.push(shiftDate(keuanganDate, -i));
     const snapshot = await api.getDocs(api.query(
       api.collection(db, "transactions"),
       api.where("date", ">=", days[0]),
       api.where("date", "<=", days[days.length - 1])
     ));
+    if (requestId !== keuanganRequestId) return;
     const all = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
     keuanganTransactions = all.filter((tx) => tx.date === keuanganDate);
     renderKeuangan();
     renderKeuanganChart(all);
   } catch (error) {
+    if (requestId !== keuanganRequestId) return;
     console.error(error);
     keuanganTransactions = [];
     renderKeuangan();

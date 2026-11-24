@@ -38,6 +38,9 @@ body {
 a { text-decoration: none; color: inherit; }
 img { max-width: 100%; display: block; }
 
+/* Class dengan display sendiri tetap harus patuh pada atribut hidden. */
+.btn[hidden], .carousel-arrow[hidden], .admin-account[hidden] { display: none !important; }
+
 .container {
   width: 100%;
   max-width: 1140px;
@@ -665,6 +668,19 @@ img { max-width: 100%; display: block; }
 .admin-testimoni-card { position: relative; aspect-ratio: 9 / 16; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border); background: var(--bg-3); }
 .admin-testimoni-card img { width: 100%; height: 100%; object-fit: cover; }
 .admin-testimoni-card button { position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; padding: 0; line-height: 1; font-size: 16px; border-radius: 50%; }
+.admin-testimoni-card .testimoni-size {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 4px 6px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 10px;
+  line-height: 1.3;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
 .admin-review-card { padding: 20px; }
 .admin-review-card > div:first-child { display: flex; flex-direction: column; }
 .admin-review-card p { color: var(--text-muted); font-size: 14px; white-space: pre-wrap; }
@@ -830,12 +846,15 @@ img { max-width: 100%; display: block; }
   justify-content: center;
   padding: 24px;
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
-  transition: opacity 0.25s ease;
+  transition: opacity 0.25s ease, visibility 0s linear 0.25s;
 }
 .lightbox.open {
   opacity: 1;
+  visibility: visible;
   pointer-events: auto;
+  transition: opacity 0.25s ease, visibility 0s;
 }
 .lightbox-img {
   max-width: 100%;

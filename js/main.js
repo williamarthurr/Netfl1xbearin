@@ -1,4 +1,5 @@
 import { initThemeToggle } from "./theme.js";
+import { escapeHtml } from "./html.js";
 import {
   WA_NUMBER, trapFocus, initOrderModal, cardHtml, carouselSync, initCarousel,
   fetchCatalogFromRest, initPublicFirestore, getPackages, renderFinderOptions as renderFinderOptionsNow,
@@ -215,12 +216,6 @@ async function loadTestimonialPhotos() {
   } catch (error) {
     console.error("Foto testimoni tidak dapat dimuat:", error);
   }
-}
-
-function escapeHtml(value) {
-  const element = document.createElement("div");
-  element.textContent = value || "Customer";
-  return element.innerHTML;
 }
 
 function formatReviewDate(timestamp) {
