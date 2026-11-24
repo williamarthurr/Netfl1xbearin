@@ -3,8 +3,8 @@
 // dipakai sebagai fallback saat Firebase gagal dan sebagai sumber tombol Seed di admin.
 import { escapeHtml } from "./html.js";
 
-// Nomor WhatsApp reseller, format internasional tanpa +
-export const WA_NUMBER = "6287782164717";
+// Nomor WhatsApp reseller, format internasional tanpa +. Diambil dari config klien.
+export const WA_NUMBER = window.CLIENT_CONFIG?.waNumber || "";
 
 // Dokumen Firestore lama yang belum punya `order` diurutkan berdasarkan nama (bukan urutan acak dari query).
 const withDefaultOrder = (items) => items.map((item) => ({ ...item, order: item.order ?? 9999 }));

@@ -1298,9 +1298,8 @@ html[data-theme="light"] .sync-secret-row code { color: #963f55; }
   .features-grid, .steps, .hero-stats { grid-template-columns: 1fr; }
   .reviews-summary { grid-template-columns: 1fr; gap: 22px; padding: 22px; }
   .review-card { flex-basis: 88%; }
-  .carousel-arrow { width: 36px; height: 36px; }
-  .carousel-arrow-prev { left: -4px; }
-  .carousel-arrow-next { right: -4px; }
+  /* Di HP cukup digeser dengan jari; panahnya cuma menutupi kartu. */
+  .carousel-arrow { display: none !important; }
   .testimoni-grid { gap: 12px; }
   .testimoni-card { aspect-ratio: 4 / 5; }
   .admin-grid, .admin-review-list { grid-template-columns: 1fr; }

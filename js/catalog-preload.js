@@ -2,8 +2,13 @@
 // lebih awal daripada modul ES. projectId & apiKey harus sama dengan js/firebase-config.js.
 // Baris hasil query disimpan mentah; parsing-nya ada di js/catalog.js supaya tidak dobel.
 (function () {
-  var PROJECT = "netfl1xmicicow";
-  var KEY = "AIzaSyBdAPAs5qGXsCCs2YsPhouqDhrmW-nOBmQ";
+  var config = window.CLIENT_CONFIG || {};
+  var PROJECT = config.projectId || "";
+  var KEY = config.apiKey || "";
+  if (!PROJECT || !KEY) {
+    window.__catalogPrefetch = Promise.resolve(null);
+    return;
+  }
 
   function query(collection) {
     var url = "https://firestore.googleapis.com/v1/projects/" + encodeURIComponent(PROJECT)
