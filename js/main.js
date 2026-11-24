@@ -190,31 +190,59 @@ function initLazyImages() {
   document.querySelectorAll(".testimoni-card img").forEach(watchLazyImage);
 }
 
-// Foto testimoni hasil upload admin (data URL di Firestore) ditambahkan setelah foto statis.
-async function loadTestimonialPhotos() {
-  if (!db) return;
+// Foto testimoni hasil upload admin (data URL di Firestore) ditambahkan setelah
+// foto statis. Diambil per halaman supaya unduhan awal tidak membawa semua foto.
+const TESTIMONI_PAGE_SIZE = 4;
+const testimonialState = { lastDoc: null, hasMore: false, loading: false };
+
+function testimonialPageQuery(afterDoc) {
+  const parts = [
+    firestoreApi.collection(db, "testimonials"),
+    firestoreApi.orderBy("createdAt", "asc"),
+    firestoreApi.limit(TESTIMONI_PAGE_SIZE),
+  ];
+  if (afterDoc) parts.push(firestoreApi.startAfter(afterDoc));
+  return firestoreApi.query(...parts);
+}
+
+function updateTestimonialMoreButton() {
+  const button = document.getElementById("testimoniMore");
+  if (!button) return;
+  button.hidden = !testimonialState.hasMore;
+  button.disabled = testimonialState.loading;
+  button.textContent = testimonialState.loading ? "Memuat…" : "Muat testimoni lainnya";
+}
+
+async function loadTestimonialPhotos(afterDoc = null) {
+  if (!db || testimonialState.loading) return;
+  testimonialState.loading = true;
+  updateTestimonialMoreButton();
   try {
-    const snapshot = await firestoreApi.getDocs(firestoreApi.collection(db, "testimonials"));
-    const photos = snapshot.docs.map((doc) => doc.data())
-      .sort((a, b) => (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0));
-    if (!photos.length) return;
-    // Dekode dulu semua gambar sebelum kartu dirender agar tidak ada kedipan skeleton.
-    // loading="lazy" sengaja tidak dipakai: data URL tidak perlu hemat download,
-    // dan lazy justru menunda load untuk kartu yang di luar layar (efek kedip di carousel).
-    await Promise.all(photos.map((photo) => new Promise((resolve) => {
-      const img = new Image();
-      img.onload = img.onerror = resolve;
-      img.src = photo.src;
-    })));
-    const list = document.getElementById("testimoniList");
-    list.insertAdjacentHTML("beforeend", photos.map((photo) => `<figure class="testimoni-card" data-src="${photo.src}">
-      <div class="skeleton-media"></div>
-      <img src="${photo.src}" alt="${escapeHtml(photo.fileName || "Testimoni pelanggan")}" decoding="async" />
-    </figure>`).join(""));
-    list.querySelectorAll(".testimoni-card img").forEach(watchLazyImage);
-    carouselSync.testimoni?.();
+    const snapshot = await firestoreApi.getDocs(testimonialPageQuery(afterDoc));
+    testimonialState.lastDoc = snapshot.docs[snapshot.docs.length - 1] || testimonialState.lastDoc;
+    testimonialState.hasMore = snapshot.docs.length === TESTIMONI_PAGE_SIZE;
+    const photos = snapshot.docs.map((doc) => doc.data());
+    if (photos.length) {
+      // Dekode dulu gambar halaman ini sebelum dirender agar tidak ada kedipan skeleton.
+      // loading="lazy" sengaja tidak dipakai: data URL tidak perlu hemat download.
+      await Promise.all(photos.map((photo) => new Promise((resolve) => {
+        const img = new Image();
+        img.onload = img.onerror = resolve;
+        img.src = photo.src;
+      })));
+      const list = document.getElementById("testimoniList");
+      list.insertAdjacentHTML("beforeend", photos.map((photo) => `<figure class="testimoni-card" data-src="${escapeHtml(photo.src)}">
+        <div class="skeleton-media"></div>
+        <img src="${escapeHtml(photo.src)}" alt="${escapeHtml(photo.fileName || "Testimoni pelanggan")}" decoding="async" />
+      </figure>`).join(""));
+      list.querySelectorAll(".testimoni-card img").forEach(watchLazyImage);
+      carouselSync.testimoni?.();
+    }
   } catch (error) {
     console.error("Foto testimoni tidak dapat dimuat:", error);
+  } finally {
+    testimonialState.loading = false;
+    updateTestimonialMoreButton();
   }
 }
 
@@ -427,6 +455,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initCarousels();
   initReviewForm();
   document.getElementById("reviewMore").addEventListener("click", loadMoreReviews);
+  document.getElementById("testimoniMore")?.addEventListener("click", () => loadTestimonialPhotos(testimonialState.lastDoc));
 
   // Katalog diambil lewat REST (cepat, tanpa SDK), reviews/testimoni menyusul lewat SDK.
   catalogLoad
