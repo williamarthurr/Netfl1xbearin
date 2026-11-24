@@ -1302,6 +1302,7 @@ html[data-theme="light"] .sync-secret-row code { color: #963f55; }
   .carousel-arrow-prev { left: -4px; }
   .carousel-arrow-next { right: -4px; }
   .testimoni-grid { gap: 12px; }
+  .testimoni-card { aspect-ratio: 4 / 5; }
   .admin-grid, .admin-review-list { grid-template-columns: 1fr; }
   .admin-login { margin: 20px auto; padding: 28px 20px; }
   .admin-main { padding-top: 40px; padding-bottom: 60px; }

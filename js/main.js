@@ -25,6 +25,13 @@ async function initFirebase() {
   return connection;
 }
 
+// SDK Firebase baru diunduh saat bagian ulasan/testimoni hampir terlihat.
+let firebaseReadyPromise = null;
+function ensureFirebase() {
+  if (!firebaseReadyPromise) firebaseReadyPromise = initFirebase();
+  return firebaseReadyPromise;
+}
+
 function renderCatalog() {
   const grid = document.getElementById("catalogGrid");
   grid.innerHTML = getPackages()
@@ -192,7 +199,7 @@ function initLazyImages() {
 
 // Foto testimoni hasil upload admin (data URL di Firestore) ditambahkan setelah
 // foto statis. Diambil per halaman supaya unduhan awal tidak membawa semua foto.
-const TESTIMONI_PAGE_SIZE = 4;
+const TESTIMONI_PAGE_SIZE = 2;
 const testimonialState = { lastDoc: null, hasMore: false, loading: false };
 
 function testimonialPageQuery(afterDoc) {
@@ -244,6 +251,33 @@ async function loadTestimonialPhotos(afterDoc = null) {
     testimonialState.loading = false;
     updateTestimonialMoreButton();
   }
+}
+
+// Tunda unduhan SDK Firebase sampai pengunjung hampir sampai ke bagian ulasan
+// atau testimoni. Katalog tetap tampil dari REST/cache, jadi first paint cepat.
+function initDeferredFirebase() {
+  const targets = [
+    { element: document.getElementById("ulasan"), load: () => loadReviews() },
+    { element: document.getElementById("testimoni"), load: () => loadTestimonialPhotos() },
+  ].filter((item) => item.element);
+
+  if (!targets.length || !("IntersectionObserver" in window)) {
+    ensureFirebase().finally(() => {
+      loadReviews();
+      loadTestimonialPhotos();
+    });
+    return;
+  }
+
+  const observer = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      const target = targets.find((item) => item.element === entry.target);
+      observer.unobserve(entry.target);
+      if (target) ensureFirebase().finally(target.load);
+    }
+  }, { rootMargin: "600px 0px" });
+  targets.forEach((item) => observer.observe(item.element));
 }
 
 function formatReviewDate(timestamp) {
@@ -413,9 +447,13 @@ function initReviewForm() {
     const customerName = document.getElementById("reviewName").value.trim() || "Customer";
     const comment = document.getElementById("reviewText").value.trim();
     if (!db) {
-      status.textContent = "Form belum aktif. Admin perlu menyelesaikan konfigurasi Firebase.";
-      status.className = "review-status error";
-      return;
+      status.textContent = "Menyiapkan koneksi…";
+      await ensureFirebase().catch(() => {});
+      if (!db) {
+        status.textContent = "Form belum aktif. Admin perlu menyelesaikan konfigurasi Firebase.";
+        status.className = "review-status error";
+        return;
+      }
     }
     submit.disabled = true;
     status.textContent = "Mengirim ulasan…";
@@ -465,8 +503,5 @@ document.addEventListener("DOMContentLoaded", () => {
     })
     .catch((error) => console.error("Data katalog gagal dimuat:", error));
 
-  initFirebase().finally(() => {
-    loadReviews();
-    loadTestimonialPhotos();
-  });
+  initDeferredFirebase();
 });
