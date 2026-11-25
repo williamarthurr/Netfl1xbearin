@@ -555,10 +555,10 @@ img { max-width: 100%; display: block; }
   top: 10px;
   right: 10px;
   z-index: 2;
-  width: 26px;
-  height: 34px;
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
   padding: 0;
   border: 0;
   background: none;
@@ -566,9 +566,10 @@ img { max-width: 100%; display: block; }
   cursor: pointer;
   transition: var(--transition);
 }
-.card-flip:hover { color: var(--red); border-color: var(--red); }
+.card-flip-label { font-size: 9px; font-weight: 700; line-height: 1; text-transform: uppercase; }
+.card-flip:hover { color: var(--red); }
 .card-flip:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
-.card .card-badge { right: 42px; }
+.card .card-badge { right: 62px; }
 .card-notes {
   list-style: none;
   width: 100%;
@@ -1445,7 +1446,7 @@ html[data-theme="light"] .sync-secret-row code { color: #963f55; }
   .group-title { font-size: 12px; letter-spacing: 1.5px; margin-bottom: 12px; }
   .katalog-alt .decor { display: none; }
   .card { padding: 14px; }
-  .card-flip { width: 30px; height: 38px; top: 8px; right: 8px; }
+  .card-flip { top: 8px; right: 8px; }
   .card .card-badge { top: 8px; left: 8px; right: auto; }
   .card-featured .card-icon { margin-top: 22px; }
   .card-back { padding: 58px 12px 12px; }

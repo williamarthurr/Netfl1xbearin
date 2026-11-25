@@ -364,8 +364,8 @@ export function initCardFlip() {
 
 const FLIP_ICON = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="11" height="16" rx="2"></rect><path d="M14 9h4a3 3 0 0 1 3 3v5"></path><path d="M18 14l3 3 3-3"></path></svg>`;
 
-function flipButtonHtml(label) {
-  return `<button type="button" class="card-flip js-card-flip" aria-label="${escapeHtml(label)}">${FLIP_ICON}</button>`;
+function flipButtonHtml(label, text) {
+  return `<button type="button" class="card-flip js-card-flip" aria-label="${escapeHtml(label)}">${FLIP_ICON}<span class="card-flip-label">${escapeHtml(text)}</span></button>`;
 }
 
 function notesHtml(notes) {
@@ -384,7 +384,7 @@ export function cardHtml(pkg, variant = "", groupLabel = "") {
         <div class="card-face card-front">
           ${badge}
           ${group}
-          ${flipButtonHtml(`Lihat keterangan ${pkg.duration || "paket"}`)}
+          ${flipButtonHtml(`Lihat keterangan ${pkg.duration || "paket"}`, "Flip card")}
           <div class="card-icon"><i class="fi ${escapeHtml(pkg.icon || "fi-br-film")}"></i></div>
           <h3 class="card-duration">${escapeHtml(pkg.duration)}</h3>
           ${pkg.device ? `<p class="card-device">${escapeHtml(pkg.device)}</p>` : ""}
@@ -393,7 +393,7 @@ export function cardHtml(pkg, variant = "", groupLabel = "") {
           <button type="button" class="btn btn-wa js-order-wa" data-pkg="${escapeHtml(pkg.id)}">Order via WhatsApp</button>
         </div>
         <div class="card-face card-back" aria-hidden="true" inert>
-          ${flipButtonHtml("Kembali ke depan")}
+          ${flipButtonHtml("Kembali ke depan", "Kembali")}
           ${notesHtml(pkg.notes)}
         </div>
       </div>
