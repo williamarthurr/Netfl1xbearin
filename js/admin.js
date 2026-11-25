@@ -788,40 +788,94 @@ function resetPackageForm() {
 }
 
 function fillCatalogSelect(catalogs) {
-  const select = $("#pkgCatalog");
-  const current = select.value;
-  select.innerHTML = catalogs.map((catalog) =>
+  const options = catalogs.map((catalog) =>
     `<option value="${escapeHtml(catalog.key)}">${escapeHtml(catalog.name)}</option>`).join("");
-  if (current && [...select.options].some((option) => option.value === current)) select.value = current;
+
+  const formSelect = $("#pkgCatalog");
+  const formCurrent = formSelect.value;
+  formSelect.innerHTML = options;
+  if (formCurrent && [...formSelect.options].some((option) => option.value === formCurrent)) formSelect.value = formCurrent;
+
+  const filterSelect = $("#pkgFilterCatalog");
+  const filterCurrent = filterSelect.value;
+  filterSelect.innerHTML = `<option value="">Semua katalog</option>${options}`;
+  filterSelect.value = [...filterSelect.options].some((option) => option.value === filterCurrent) ? filterCurrent : "";
+}
+
+function statusBadge(item) {
+  return item.active === false
+    ? '<span class="status-pill stopped">Nonaktif</span>'
+    : '<span class="status-pill approved">Aktif</span>';
 }
 
 function renderKatalogRows() {
   const { catalogs, packages } = katalogCache;
-  const catalogById = new Map(catalogs.map((catalog) => [catalog.id, catalog]));
+  const catalogByKey = new Map(catalogs.map((catalog) => [catalog.key, catalog]));
 
-  $("#adminCatalogList").innerHTML = catalogs.length
-    ? catalogs.map((catalog) => `<article class="admin-catalog-row">
-        <div class="row-main"><strong>${escapeHtml(catalog.name)}</strong>
-          <span class="row-meta">key: ${escapeHtml(catalog.key)} · ${escapeHtml(catalog.page || "paket-lain")} · urutan ${Number(catalog.order) || 0} · ${catalog.active === false ? "nonaktif" : "aktif"}</span>
-        </div>
-        <div class="admin-actions">
+  $("#adminCatalogList tbody").innerHTML = catalogs.length
+    ? catalogs.map((catalog) => `<tr>
+        <td><strong>${escapeHtml(catalog.name)}</strong>${catalog.subtitle ? `<small class="table-sub">${escapeHtml(catalog.subtitle)}</small>` : ""}</td>
+        <td><code>${escapeHtml(catalog.key)}</code></td>
+        <td>${escapeHtml(catalog.page === "index" ? "Beranda (Netflix)" : "Paket lain")}</td>
+        <td class="num">${Number(catalog.order) || 0}</td>
+        <td>${statusBadge(catalog)}</td>
+        <td class="table-actions">
           <button class="btn btn-outline btn-sm" type="button" data-cat-edit="${escapeHtml(catalog.id)}">Edit</button>
           <button class="btn btn-danger btn-sm" type="button" data-cat-delete="${escapeHtml(catalog.id)}">Hapus</button>
-        </div>
-      </article>`).join("")
-    : '<p class="review-empty">Belum ada katalog. Tambah baru atau klik Seed dari data bawaan.</p>';
+        </td>
+      </tr>`).join("")
+    : '<tr class="table-empty"><td colspan="6">Belum ada katalog. Tambah baru atau klik Seed dari data bawaan.</td></tr>';
 
-  $("#adminPackageList").innerHTML = packages.length
-    ? packages.map((pkg) => `<article class="admin-catalog-row">
-        <div class="row-main"><strong>${escapeHtml(pkg.service || "-")} · ${escapeHtml(pkg.duration || "-")}</strong>
-          <span class="row-meta">${escapeHtml(catalogById.get(pkg.catalog)?.name || pkg.catalog || "-")} · ${escapeHtml(pkg.group || "-")} · Rp ${formatPrice(pkg.price)} · ${escapeHtml(pkg.device || "-")} · ${pkg.active === false ? "nonaktif" : "aktif"}</span>
-        </div>
-        <div class="admin-actions">
+  const filterKey = $("#pkgFilterCatalog").value;
+  const query = $("#pkgFilterSearch").value.trim().toLowerCase();
+  const visible = packages.filter((pkg) => {
+    if (filterKey && pkg.catalog !== filterKey) return false;
+    if (!query) return true;
+    return [pkg.service, pkg.duration, pkg.group, pkg.device, pkg.notes].some((value) =>
+      String(value || "").toLowerCase().includes(query));
+  });
+
+  const grouped = new Map();
+  visible.forEach((pkg) => {
+    const key = pkg.catalog || "";
+    if (!grouped.has(key)) grouped.set(key, new Map());
+    const byGroup = grouped.get(key);
+    const group = pkg.group || "";
+    if (!byGroup.has(group)) byGroup.set(group, []);
+    byGroup.get(group).push(pkg);
+  });
+
+  const catalogOrder = new Map(catalogs.map((catalog, index) => [catalog.key, index]));
+  const keys = [...grouped.keys()].sort((a, b) => {
+    const ai = catalogOrder.has(a) ? catalogOrder.get(a) : catalogs.length;
+    const bi = catalogOrder.has(b) ? catalogOrder.get(b) : catalogs.length;
+    return ai - bi || a.localeCompare(b);
+  });
+
+  const rows = keys.map((key) => {
+    const label = catalogByKey.get(key)?.name || (key === "" ? "Tanpa katalog" : key);
+    const byGroup = grouped.get(key);
+    const total = [...byGroup.values()].reduce((sum, items) => sum + items.length, 0);
+    const body = [...byGroup.keys()].sort((a, b) => a.localeCompare(b)).map((group) => {
+      const heading = group
+        ? `<tr class="table-subgroup"><td colspan="6">${escapeHtml(group)}</td></tr>`
+        : "";
+      return heading + byGroup.get(group).sort(byOrder).map((pkg) => `<tr>
+        <td><strong>${escapeHtml(pkg.service || "-")}</strong>${pkg.featured ? '<span class="table-badge">TERLARIS</span>' : ""}</td>
+        <td>${escapeHtml(pkg.duration || "-")}</td>
+        <td>${escapeHtml(pkg.device || "-")}${pkg.notes ? '<small class="table-sub">Ada keterangan</small>' : ""}</td>
+        <td class="num"><strong>Rp ${formatPrice(pkg.price)}</strong>${pkg.per ? `<small class="table-sub">${escapeHtml(pkg.per)}</small>` : ""}</td>
+        <td>${statusBadge(pkg)}</td>
+        <td class="table-actions">
           <button class="btn btn-outline btn-sm" type="button" data-pkg-edit="${escapeHtml(pkg.id)}">Edit</button>
           <button class="btn btn-danger btn-sm" type="button" data-pkg-delete="${escapeHtml(pkg.id)}">Hapus</button>
-        </div>
-      </article>`).join("")
-    : '<p class="review-empty">Belum ada paket.</p>';
+        </td>
+      </tr>`).join("");
+    }).join("");
+    return `<tr class="table-group"><td colspan="6"><strong>${escapeHtml(label)}</strong><span class="table-group-count">${total} paket</span></td></tr>${body}`;
+  }).join("");
+
+  $("#adminPackageList tbody").innerHTML = rows || '<tr class="table-empty"><td colspan="6">Tidak ada paket yang cocok.</td></tr>';
 }
 
 async function loadKatalog() {
@@ -848,6 +902,8 @@ function initKatalog() {
 }
 
 $("#refreshKatalog").addEventListener("click", loadKatalog);
+$("#pkgFilterCatalog").addEventListener("change", renderKatalogRows);
+$("#pkgFilterSearch").addEventListener("input", renderKatalogRows);
 
 $("#catalogForm").addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -891,6 +947,7 @@ $("#packageForm").addEventListener("submit", async (event) => {
     service: $("#pkgService").value.trim(),
     duration: $("#pkgDuration").value.trim(),
     device: $("#pkgDevice").value.trim(),
+    notes: $("#pkgNotes").value.trim(),
     price: Number($("#pkgPrice").value),
     per: $("#pkgPer").value.trim(),
     icon: $("#pkgIcon").value,
@@ -975,6 +1032,7 @@ $("#adminPackageList").addEventListener("click", async (event) => {
     $("#pkgService").value = pkg.service || "";
     $("#pkgDuration").value = pkg.duration || "";
     $("#pkgDevice").value = pkg.device || "";
+    $("#pkgNotes").value = pkg.notes || "";
     $("#pkgPrice").value = Number(pkg.price) || 0;
     $("#pkgPer").value = pkg.per || "";
     $("#pkgIcon").value = pkg.icon || "fi-br-film";

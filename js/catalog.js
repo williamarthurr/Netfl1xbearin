@@ -10,6 +10,15 @@ export const WA_NUMBER = window.CLIENT_CONFIG?.waNumber || "";
 const withDefaultOrder = (items) => items.map((item) => ({ ...item, order: item.order ?? 9999 }));
 const withSeedOrder = (items) => items.map((item, index) => ({ ...item, order: item.order ?? index + 1 }));
 
+// Keterangan bawaan paket Netflix (1 poin per baris). Bisa diubah per paket lewat admin.
+const NETFLIX_NOTES = [
+  "Private max 3 device: bisa laptop & iOS, wajib private (rawan limit/lock kalau dipaksa iOS semua).",
+  "iOS dihitung 2 device.",
+  "Sharing 3 device wajib Android semua.",
+  "Jangan ganti akun atau logout, terutama akun sharing.",
+  "Saran max 2 device biar tidak lock/limit · hangus jika kesalahan customer.",
+].join("\n");
+
 // Master katalog bawaan. `page: index` tampil di beranda, sisanya jadi section di paket-lain.html.
 export const SEED_CATALOGS = withSeedOrder([
   { key: "netflix", name: "Netflix", subtitle: "Premium Sharing", description: "Harga per profile, bukan per akun. Kamu dapat profile sendiri, jadi riwayat tontonan tetap privat.", icon: "fi-br-film", page: "index", order: 1, active: true },
@@ -19,14 +28,14 @@ export const SEED_CATALOGS = withSeedOrder([
 
 // Field `catalog` = key master katalog. Harga dalam ribuan Rupiah ("25" = Rp 25.000).
 export const SEED_PACKAGES = withSeedOrder([
-  { catalog: "netflix", service: "Netflix", duration: "1 Hari", device: "1 profile · 1 user", price: "4", per: "/ 1 hari", icon: "fi-br-film", featured: true },
-  { catalog: "netflix", service: "Netflix", duration: "2 Hari", device: "1 profile · 1 user", price: "7", per: "/ 2 hari", icon: "fi-br-film", featured: false },
-  { catalog: "netflix", service: "Netflix", duration: "3 Hari", device: "1 profile · 1 user", price: "9", per: "/ 3 hari", icon: "fi-br-film", featured: false },
-  { catalog: "netflix", service: "Netflix", duration: "5 Hari", device: "1 profile · 1 user", price: "11", per: "/ 5 hari", icon: "fi-br-film", featured: false },
-  { catalog: "netflix", service: "Netflix", duration: "7 Hari", device: "1 profile · 1 user", price: "15", per: "/ 7 hari", icon: "fi-br-film", featured: false },
-  { catalog: "netflix", service: "Netflix", duration: "1 Bulan", device: "1 profile · 2 user", price: "20", per: "/ bulan", icon: "fi-br-users", featured: true },
-  { catalog: "netflix", service: "Netflix", duration: "1 Bulan", device: "1 device", price: "40", per: "/ bulan", icon: "fi-br-laptop", featured: false },
-  { catalog: "netflix", service: "Netflix", duration: "1 Bulan", device: "2 device", price: "45", per: "/ bulan", icon: "fi-br-devices", featured: false },
+  { catalog: "netflix", service: "Netflix", duration: "1 Hari", device: "1 profile · 1 user", price: "4", per: "/ 1 hari", icon: "fi-br-film", featured: true, notes: NETFLIX_NOTES },
+  { catalog: "netflix", service: "Netflix", duration: "2 Hari", device: "1 profile · 1 user", price: "7", per: "/ 2 hari", icon: "fi-br-film", featured: false, notes: NETFLIX_NOTES },
+  { catalog: "netflix", service: "Netflix", duration: "3 Hari", device: "1 profile · 1 user", price: "9", per: "/ 3 hari", icon: "fi-br-film", featured: false, notes: NETFLIX_NOTES },
+  { catalog: "netflix", service: "Netflix", duration: "5 Hari", device: "1 profile · 1 user", price: "11", per: "/ 5 hari", icon: "fi-br-film", featured: false, notes: NETFLIX_NOTES },
+  { catalog: "netflix", service: "Netflix", duration: "7 Hari", device: "1 profile · 1 user", price: "15", per: "/ 7 hari", icon: "fi-br-film", featured: false, notes: NETFLIX_NOTES },
+  { catalog: "netflix", service: "Netflix", duration: "1 Bulan", device: "1 profile · 2 user", price: "20", per: "/ bulan", icon: "fi-br-users", featured: true, notes: NETFLIX_NOTES },
+  { catalog: "netflix", service: "Netflix", duration: "1 Bulan", device: "1 device", price: "40", per: "/ bulan", icon: "fi-br-laptop", featured: false, notes: NETFLIX_NOTES },
+  { catalog: "netflix", service: "Netflix", duration: "1 Bulan", device: "2 device", price: "45", per: "/ bulan", icon: "fi-br-devices", featured: false, notes: NETFLIX_NOTES },
   { catalog: "viu", group: "VIU", service: "Viu", duration: "1 Bulan", device: "", price: "5", per: "/ bulan", icon: "fi-br-film" },
   { catalog: "viu", group: "VIDEO PLATINUM", service: "Video Platinum", duration: "1 Bulan Sharing", device: "mobile only", price: "18", per: "/ bulan", icon: "fi-br-play" },
   { catalog: "viu", group: "VIDEO PRIVATE", service: "Video Private", duration: "1 Minggu", device: "all device", price: "25", per: "/ minggu", icon: "fi-br-film" },
@@ -337,20 +346,66 @@ export function initOrderModal() {
   });
 }
 
+// Tombol flip di semua kartu katalog. Event delegation dipakai supaya tetap jalan
+// saat kartu diganti setelah data Firestore datang.
+export function initCardFlip() {
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest(".js-card-flip");
+    if (!button) return;
+    const card = button.closest(".card");
+    if (!card) return;
+    const flipped = !card.classList.contains("is-flipped");
+    card.classList.toggle("is-flipped", flipped);
+    const front = card.querySelector(".card-front");
+    const back = card.querySelector(".card-back");
+    if (front) {
+      front.inert = flipped;
+      front.setAttribute("aria-hidden", String(flipped));
+    }
+    if (back) {
+      back.inert = !flipped;
+      back.setAttribute("aria-hidden", String(!flipped));
+    }
+    const activeFace = flipped ? back : front;
+    activeFace?.querySelector(".js-card-flip")?.focus({ preventScroll: true });
+  });
+}
+
+const FLIP_ICON = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>`;
+
+function flipButtonHtml(label) {
+  return `<button type="button" class="card-flip js-card-flip" aria-label="${escapeHtml(label)}">${FLIP_ICON}</button>`;
+}
+
+function notesHtml(notes) {
+  const lines = String(notes || "").split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  if (!lines.length) return `<div class="card-heart" aria-hidden="true">♥</div>`;
+  return `<ul class="card-notes">${lines.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}</ul>`;
+}
+
 // `id` diambil dari document ID Firestore (atau seed-xxx untuk fallback).
 export function cardHtml(pkg, variant = "", groupLabel = "") {
   const badge = pkg.featured ? `<span class="card-badge">TERLARIS</span>` : "";
   const group = groupLabel ? `<span class="card-group">${groupLabel}</span>` : "";
   return `
     <article class="card ${pkg.featured ? "card-featured" : ""} ${pkg.device ? "" : "card-no-device"} ${variant}">
-      ${badge}
-      ${group}
-      <div class="card-icon"><i class="fi ${escapeHtml(pkg.icon || "fi-br-film")}"></i></div>
-      <h3 class="card-duration">${escapeHtml(pkg.duration)}</h3>
-      ${pkg.device ? `<p class="card-device">${escapeHtml(pkg.device)}</p>` : ""}
-      <div class="card-price">Rp ${formatPrice(pkg.price)}</div>
-      <p class="card-per">${escapeHtml(pkg.per || "")}</p>
-      <button type="button" class="btn btn-wa js-order-wa" data-pkg="${escapeHtml(pkg.id)}">Order via WhatsApp</button>
+      <div class="card-inner">
+        <div class="card-face card-front">
+          ${badge}
+          ${group}
+          ${flipButtonHtml(`Lihat keterangan ${pkg.duration || "paket"}`)}
+          <div class="card-icon"><i class="fi ${escapeHtml(pkg.icon || "fi-br-film")}"></i></div>
+          <h3 class="card-duration">${escapeHtml(pkg.duration)}</h3>
+          ${pkg.device ? `<p class="card-device">${escapeHtml(pkg.device)}</p>` : ""}
+          <div class="card-price">Rp ${formatPrice(pkg.price)}</div>
+          <p class="card-per">${escapeHtml(pkg.per || "")}</p>
+          <button type="button" class="btn btn-wa js-order-wa" data-pkg="${escapeHtml(pkg.id)}">Order via WhatsApp</button>
+        </div>
+        <div class="card-face card-back" aria-hidden="true" inert>
+          ${flipButtonHtml("Kembali ke depan")}
+          ${notesHtml(pkg.notes)}
+        </div>
+      </div>
     </article>
   `;
 }

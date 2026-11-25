@@ -131,20 +131,38 @@
           <button class="btn btn-outline btn-sm" id="refreshKatalog" type="button">Muat ulang</button>
           <button class="btn btn-outline btn-sm" id="seedKatalog" type="button">Seed dari data bawaan</button>
         </div></div>
-        <p class="admin-help">Klik <strong>+ Tambah katalog</strong> untuk layanan baru, atau <strong>+ Tambah paket</strong> untuk durasi &amp; harganya. Form tampil di popup, tidak menggeser daftar. Harga diisi dalam <strong>ribuan Rupiah</strong> (misal <code>25</code> = Rp 25.000).</p>
+        <p class="admin-help">Paket dikelompokkan per katalog dan grup; gunakan filter untuk mencarinya. Klik <strong>+ Tambah katalog</strong> untuk layanan baru, atau <strong>+ Tambah paket</strong> untuk durasi &amp; harganya. Form tampil di popup, tidak menggeser daftar. Harga diisi dalam <strong>ribuan Rupiah</strong> (misal <code>25</code> = Rp 25.000).</p>
         <p class="review-status" id="katalogStatus" role="status"></p>
 
         <div class="admin-title admin-subtitle-row">
           <h3 class="admin-subtitle">Master katalog</h3>
           <button class="btn btn-primary btn-sm" id="addCatalog" type="button">+ Tambah katalog</button>
         </div>
-        <div class="admin-catalog-list" id="adminCatalogList"><p class="review-empty">Memuat katalog…</p></div>
+        <div class="admin-table-wrap" id="adminCatalogList">
+          <table class="admin-table">
+            <thead><tr><th>Nama</th><th>Key</th><th>Halaman</th><th>Urutan</th><th>Status</th><th class="col-actions">Aksi</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
 
         <div class="admin-title admin-subtitle-row">
           <h3 class="admin-subtitle">Paket</h3>
           <button class="btn btn-primary btn-sm" id="addPackage" type="button">+ Tambah paket</button>
         </div>
-        <div class="admin-catalog-list" id="adminPackageList"><p class="review-empty">Memuat paket…</p></div>
+        <div class="admin-table-filter">
+          <label class="review-field">Katalog
+            <select id="pkgFilterCatalog"><option value="">Semua katalog</option></select>
+          </label>
+          <label class="review-field">Cari paket
+            <input id="pkgFilterSearch" type="search" placeholder="Layanan, durasi, atau grup">
+          </label>
+        </div>
+        <div class="admin-table-wrap" id="adminPackageList">
+          <table class="admin-table">
+            <thead><tr><th>Layanan</th><th>Durasi</th><th>Device / user</th><th>Harga</th><th>Status</th><th class="col-actions">Aksi</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
 
         <!-- Popup form master katalog -->
         <div class="admin-modal" id="catalogModal" hidden>
@@ -217,6 +235,9 @@
               </label>
               <label class="review-field">Device / user
                 <input id="pkgDevice" type="text" maxlength="60" placeholder="Contoh: 6 user sharing">
+              </label>
+              <label class="review-field review-field-wide">Keterangan (1 poin per baris, kosongkan untuk ♥)
+                <textarea id="pkgNotes" rows="4" maxlength="1200" placeholder="Private max 3 device: bisa laptop &amp; iOS&#10;iOS dihitung 2 device&#10;Jangan ganti akun atau logout"></textarea>
               </label>
               <label class="review-field">Harga (ribuan Rp)
                 <input id="pkgPrice" type="number" min="0" step="1" required placeholder="Contoh: 25">

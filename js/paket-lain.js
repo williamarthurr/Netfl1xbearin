@@ -1,5 +1,5 @@
 import { initThemeToggle } from "./theme.js";
-import { initOrderModal, fetchCatalogFromRest, renderAltCatalogs } from "./catalog.js";
+import { initOrderModal, initCardFlip, fetchCatalogFromRest, renderAltCatalogs } from "./catalog.js";
 
 const catalogLoad = fetchCatalogFromRest();
 
@@ -30,6 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initMobileNav();
   renderAltCatalogs(); // data bawaan dulu, diganti data Firestore kalau tersedia
   initOrderModal();
+  initCardFlip();
   document.getElementById("year").textContent = new Date().getFullYear();
 
   catalogLoad

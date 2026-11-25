@@ -1,7 +1,7 @@
 import { initThemeToggle } from "./theme.js";
 import { escapeHtml } from "./html.js";
 import {
-  WA_NUMBER, trapFocus, initOrderModal, cardHtml, carouselSync, initCarousel,
+  WA_NUMBER, trapFocus, initOrderModal, initCardFlip, cardHtml, carouselSync, initCarousel,
   fetchCatalogFromRest, initPublicFirestore, getPackages, renderFinderOptions as renderFinderOptionsNow,
 } from "./catalog.js";
 
@@ -481,6 +481,7 @@ document.addEventListener("DOMContentLoaded", () => {
   renderCatalog(); // data bawaan dulu supaya grid tidak kosong saat Firebase masih dimuat
   renderFinderOptions();
   initOrderModal();
+  initCardFlip();
   initGenericOrder();
   initFinder();
   initFaq();
