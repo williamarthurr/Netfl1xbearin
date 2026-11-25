@@ -536,7 +536,7 @@ img { max-width: 100%; display: block; }
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  padding: 20px 16px 14px;
+  padding: 52px 16px 14px;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
@@ -559,9 +559,9 @@ img { max-width: 100%; display: block; }
   height: 34px;
   display: grid;
   place-items: center;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  background: var(--bg-3);
+  padding: 0;
+  border: 0;
+  background: none;
   color: var(--text-muted);
   cursor: pointer;
   transition: var(--transition);
@@ -1446,8 +1446,9 @@ html[data-theme="light"] .sync-secret-row code { color: #963f55; }
   .katalog-alt .decor { display: none; }
   .card { padding: 14px; }
   .card-flip { width: 30px; height: 38px; top: 8px; right: 8px; }
-  .card .card-badge { right: 46px; }
-  .card-back { padding: 28px 12px 12px; }
+  .card .card-badge { top: 8px; left: 8px; right: auto; }
+  .card-featured .card-icon { margin-top: 22px; }
+  .card-back { padding: 58px 12px 12px; }
   .card-icon { width: 34px; height: 34px; margin-bottom: 10px; }
   .card-icon .fi { font-size: 16px; }
   .card-duration { font-size: 15px; }
