@@ -10,15 +10,6 @@ export const WA_NUMBER = window.CLIENT_CONFIG?.waNumber || "";
 const withDefaultOrder = (items) => items.map((item) => ({ ...item, order: item.order ?? 9999 }));
 const withSeedOrder = (items) => items.map((item, index) => ({ ...item, order: item.order ?? index + 1 }));
 
-// Keterangan bawaan paket Netflix (1 poin per baris). Bisa diubah per paket lewat admin.
-const NETFLIX_NOTES = [
-  "Private max 3 device: bisa laptop & iOS, wajib private (rawan limit/lock kalau dipaksa iOS semua).",
-  "iOS dihitung 2 device.",
-  "Sharing 3 device wajib Android semua.",
-  "Jangan ganti akun atau logout, terutama akun sharing.",
-  "Saran max 2 device biar tidak lock/limit · hangus jika kesalahan customer.",
-].join("\n");
-
 // Master katalog bawaan. `page: index` tampil di beranda, sisanya jadi section di paket-lain.html.
 export const SEED_CATALOGS = withSeedOrder([
   { key: "netflix", name: "Netflix", subtitle: "Premium Sharing", description: "Harga per profile, bukan per akun. Kamu dapat profile sendiri, jadi riwayat tontonan tetap privat.", icon: "fi-br-film", page: "index", order: 1, active: true },
@@ -28,14 +19,14 @@ export const SEED_CATALOGS = withSeedOrder([
 
 // Field `catalog` = key master katalog. Harga dalam ribuan Rupiah ("25" = Rp 25.000).
 export const SEED_PACKAGES = withSeedOrder([
-  { catalog: "netflix", service: "Netflix", duration: "1 Hari", device: "1 profile · 1 user", price: "4", per: "/ 1 hari", icon: "fi-br-film", featured: true, notes: NETFLIX_NOTES },
-  { catalog: "netflix", service: "Netflix", duration: "2 Hari", device: "1 profile · 1 user", price: "7", per: "/ 2 hari", icon: "fi-br-film", featured: false, notes: NETFLIX_NOTES },
-  { catalog: "netflix", service: "Netflix", duration: "3 Hari", device: "1 profile · 1 user", price: "9", per: "/ 3 hari", icon: "fi-br-film", featured: false, notes: NETFLIX_NOTES },
-  { catalog: "netflix", service: "Netflix", duration: "5 Hari", device: "1 profile · 1 user", price: "11", per: "/ 5 hari", icon: "fi-br-film", featured: false, notes: NETFLIX_NOTES },
-  { catalog: "netflix", service: "Netflix", duration: "7 Hari", device: "1 profile · 1 user", price: "15", per: "/ 7 hari", icon: "fi-br-film", featured: false, notes: NETFLIX_NOTES },
-  { catalog: "netflix", service: "Netflix", duration: "1 Bulan", device: "1 profile · 2 user", price: "20", per: "/ bulan", icon: "fi-br-users", featured: true, notes: NETFLIX_NOTES },
-  { catalog: "netflix", service: "Netflix", duration: "1 Bulan", device: "1 device", price: "40", per: "/ bulan", icon: "fi-br-laptop", featured: false, notes: NETFLIX_NOTES },
-  { catalog: "netflix", service: "Netflix", duration: "1 Bulan", device: "2 device", price: "45", per: "/ bulan", icon: "fi-br-devices", featured: false, notes: NETFLIX_NOTES },
+  { catalog: "netflix", service: "Netflix", duration: "1 Hari", device: "1 profile · 1 user", price: "4", per: "/ 1 hari", icon: "fi-br-film", featured: true },
+  { catalog: "netflix", service: "Netflix", duration: "2 Hari", device: "1 profile · 1 user", price: "7", per: "/ 2 hari", icon: "fi-br-film", featured: false },
+  { catalog: "netflix", service: "Netflix", duration: "3 Hari", device: "1 profile · 1 user", price: "9", per: "/ 3 hari", icon: "fi-br-film", featured: false },
+  { catalog: "netflix", service: "Netflix", duration: "5 Hari", device: "1 profile · 1 user", price: "11", per: "/ 5 hari", icon: "fi-br-film", featured: false },
+  { catalog: "netflix", service: "Netflix", duration: "7 Hari", device: "1 profile · 1 user", price: "15", per: "/ 7 hari", icon: "fi-br-film", featured: false },
+  { catalog: "netflix", service: "Netflix", duration: "1 Bulan", device: "1 profile · 2 user", price: "20", per: "/ bulan", icon: "fi-br-users", featured: true },
+  { catalog: "netflix", service: "Netflix", duration: "1 Bulan", device: "1 device", price: "40", per: "/ bulan", icon: "fi-br-laptop", featured: false },
+  { catalog: "netflix", service: "Netflix", duration: "1 Bulan", device: "2 device", price: "45", per: "/ bulan", icon: "fi-br-devices", featured: false },
   { catalog: "viu", group: "VIU", service: "Viu", duration: "1 Bulan", device: "", price: "5", per: "/ bulan", icon: "fi-br-film" },
   { catalog: "viu", group: "VIDEO PLATINUM", service: "Video Platinum", duration: "1 Bulan Sharing", device: "mobile only", price: "18", per: "/ bulan", icon: "fi-br-play" },
   { catalog: "viu", group: "VIDEO PRIVATE", service: "Video Private", duration: "1 Minggu", device: "all device", price: "25", per: "/ minggu", icon: "fi-br-film" },
@@ -371,7 +362,7 @@ export function initCardFlip() {
   });
 }
 
-const FLIP_ICON = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>`;
+const FLIP_ICON = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="11" height="16" rx="2"></rect><path d="M14 9h4a3 3 0 0 1 3 3v5"></path><path d="M18 14l3 3 3-3"></path></svg>`;
 
 function flipButtonHtml(label) {
   return `<button type="button" class="card-flip js-card-flip" aria-label="${escapeHtml(label)}">${FLIP_ICON}</button>`;
